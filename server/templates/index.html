@@ -4,7 +4,6 @@
     <title>Flask_Chat_App</title>
   </head>
   <body>
-
     <h3 style='color: #ccc;font-size: 30px;'>No message yet..</h3>
     <div class="message_holder"></div>
 
@@ -15,13 +14,9 @@
     </form>
 
     <h1>Video Streaming Demonstration</h1>
-    <form class="video" action="" method="POST">
-      <input type="text" class="userid" placeholder="Show User"/>
-      <input type="submit"/>
-    </form>
-    <!-- <img src="{{ url_for('video_feed_usr',usr=1) }}"> -->
-    <!-- <img src="{{ url_for('video_feed_usr',usr=2) }}"> -->
-    <img class="uservideo"/>
+    <!-- <form class="video" action="" method="POST"> <input type="submit"/> </form> -->
+    <img src="{{ url_for('video_feed') }}">
+    <!-- <img class="uservideo"/> -->
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
@@ -42,14 +37,17 @@
           } )
           $( 'input.message' ).val( '' ).focus()
         } )
+        // var form = $( 'form.video' ).on( 'submit', function( e ) {
+        //   e.preventDefault()
+        //   console.log(user_name)
+        //   socket.emit( 'connect user', {
+        //     user_name : user_name,
+        //   } )
+        //   $( 'input.userid' ).val( '' ).focus()
+        // } )
         var form = $( 'form.video' ).on( 'submit', function( e ) {
           e.preventDefault()
-          let user_name = $( 'input.userid' ).val()
-          console.log(user_name)
-          socket.emit( 'connect user', {
-            user_name : user_name,
-          } )
-          $( 'input.userid' ).val( '' ).focus()
+          socket.emit( 'start recording', {} )
         } )
       } )
       socket.on( 'my response', function( msg ) {
@@ -59,11 +57,10 @@
           $( 'div.message_holder' ).append( '<div><b style="color: #000">'+msg.user_name+'</b> '+msg.message+'</div>' )
         }
       })
-      socket.on( 'my video response', function( msg ) {
-        x = msg.user_name
-        console.log(x)
-        if(x==1) $( 'img.uservideo' ).attr("src","{{ url_for('video_feed_usr',usr=1)}}")
-        if(x==2) $( 'img.uservideo' ).attr("src","{{ url_for('video_feed_usr',usr=2)}}")
+  
+      socket.on('frame response',function(msg) {
+        x = msg.frame
+        $( 'img.uservideo' ).attr("src",x)
       })
     </script>
 
