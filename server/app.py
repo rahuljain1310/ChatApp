@@ -51,18 +51,14 @@ def get_frame():
     while True:
         retval, im = camera.read()
         imgencode=cv2.imencode('.jpg',im)[1]
+        # print(imgencode)
         data = pickle.dumps(imgencode, 0)
+        # print(data)
         size = len(data)
         stringData=imgencode.tostring()
-        # x = (b'--frame\r\n'
-        #     b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
-        # json = {"strdata":x}
-        # if(i%100==0):
-        #     socketio.emit('fr', json, callback=messageReceived)
+        print(stringData)
         yield (b'--frame\r\n'
             b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
-        # x = (b'--frame\r\n'
-        #     b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
     camera.release()
     del(camera)
 
@@ -74,23 +70,23 @@ def get_frame():
 #         yield (b'--frame\r\n'
 #             b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
 
-# def send_frame():
-#     camera=cv2.VideoCapture(0)
-#     while(True):
-#         retval,im = camera.read()
-#         imgencode = cv2.imencode('.jpg',im)[1]
-#         stringData=imgencode.tostring()
-#         x = (b'--frame\r\n'
-#             b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
-#         socketio.emit('frame response',{"frame": x})
-#         # yield (b'--frame\r\n'
-#         #     b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
-#     camera.release()
-#     del (camera)
+def send_frame():
+    camera=cv2.VideoCapture(0)
+    i = 1
+    while(i<=100):
+        retval,im = camera.read()
+        imgencode = cv2.imencode('.jpg',im)[1]
+        stringData=imgencode.tostring()
+        yield(stringData)
+        i = i+1
+    camera.release()
+    del (camera)
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(get_frame(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    for video_frame in send_frame():
+        socketio.emit('my_video_frame', {'data': video_frame})
+    # return Response(get_frame(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # @app.route('/video_feed/<int:usr>')
 # def video_feed_usr(usr):
@@ -112,14 +108,15 @@ def handle_my_custom_event(json, methods=['GET', 'POST']):
     conn.commit()
     socketio.emit('my response', json, callback=messageReceived)
 
-# @socketio.on("start recording")
-# def handke_user_connect(json, methods=['GET', 'POST']):
-#     log = 'Start Recording: ' + str(json)
-#     print(log)
-#     cursor.execute('INSERT INTO log VALUES (%s)',log)
-#     conn.commit()
-#     thr = threading.Thread(target=get_frame, args=(), kwargs={})
-#     thr.start()
+@socketio.on("send frame bundle")
+def handke_user_connect(json, methods=['GET', 'POST']):
+    log = 'Start Recording: '
+    print(log)
+    cursor.execute('INSERT INTO log VALUES (%s)',log)
+    conn.commit()
+    for video_frame in send_frame():
+        print(video_frame)
+        socketio.emit('fr', {'data': video_frame})
 
 # =============================================================================
 # class FlaskThread(QThread):

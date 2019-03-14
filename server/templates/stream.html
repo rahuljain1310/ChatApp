@@ -5,29 +5,32 @@
   </head>
   <body>
     <h1>Video Streaming Demonstration</h1>
+    <form class="video" action="" method="POST"> <input type="submit"/> </form>
     <img class="uservideo"/>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
     <script type="text/javascript">
+      function hexToBase64(str) {
+          // return btoa(String.fromCharCode.apply(null, str.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")));
+          return btoa(String.fromCharCode.apply(null, new Uint8Array(str)));
+      }
       var socket = io.connect('http://' + document.domain + ':' + location.port);
       socket.on( 'connect', function() {
+        console.log("What is happening")
         socket.emit( 'my event', {
           data: 'User Connected'
         } )
         var form = $( 'form.video' ).on( 'submit', function( e ) {
           e.preventDefault()
-          let user_name = $( 'input.userid' ).val()
-          console.log(user_name)
-          socket.emit( 'connect user', {
-            user_name : user_name,
-          } )
-          $( 'input.userid' ).val( '' ).focus()
-        } )
+          socket.emit( 'send frame bundle', {}, namespace="/stream")
+          console.log("Socekt emit")
+        })
       })
       socket.on('fr',function(msg) {
-        $( 'img.uservideo' ).attr("src",msg.strdata)
+        console.log(msg.data)
+        $( 'img.uservideo' ).attr("src","data:image/jpeg;base64,"+hexToBase64(msg.data))
       })
     </script>
 
