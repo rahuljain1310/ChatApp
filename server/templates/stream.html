@@ -13,23 +13,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
     <script type="text/javascript">
       function hexToBase64(str) {
-          // return btoa(String.fromCharCode.apply(null, str.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")));
           return btoa(String.fromCharCode.apply(null, new Uint8Array(str)));
       }
-      var socket = io.connect('http://' + document.domain + ':' + location.port);
+      var socket = io.connect('http://' + document.domain + ':' + location.port)
+      var sendframe = false
       socket.on( 'connect', function() {
-        console.log("What is happening")
         socket.emit( 'my event', {
           data: 'User Connected'
         } )
-        var form = $( 'form.video' ).on( 'submit', function( e ) {
+        var form = $( 'form.video' ).on( 'submit', function(e) {
           e.preventDefault()
+          sendframe = true
           socket.emit( 'send frame bundle', {}, namespace="/stream")
-          console.log("Socekt emit")
+          console.log("Requesting frames")
         })
       })
       socket.on('fr',function(msg) {
-        console.log(msg.data)
+        console.log("frame received")
+        if(sendframe) socket.emit( 'send each frame', {}, namespace="/stream")
         $( 'img.uservideo' ).attr("src","data:image/jpeg;base64,"+hexToBase64(msg.data))
       })
     </script>

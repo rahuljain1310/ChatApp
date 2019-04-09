@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QApplication
 from PyQt5.QtCore import QThread, QUrl
 
 PORT = 5000
-ROOT_URL = 'http://localhost:{}'.format(PORT)
+ROOT_URL = 'http://localhost:{}/stream'.format(PORT)
         
 if __name__ == '__main__':    
     qtapp = QApplication(sys.argv)
