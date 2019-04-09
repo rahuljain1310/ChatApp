@@ -2,14 +2,19 @@
 
 ## Installing Dependencies
 >pip install opencv-python
-
 >pip install flask 
-
 >pip install flask-socketio
-
 >pip install flask-mysql
-
 >pip install PyQt5
+
+## Setup Database
+Create Database in MYSQL
+Database: Work
+Host: localhost ( Default)
+Password: '' ( Empty String Default)
+User: 'root' (Default)
+Table: log
+Column: Eventlog
 
 ## Running Server
 Go to server folder.
@@ -19,6 +24,4 @@ To run a separate window: python front.py
 Or Open localhost:5000 on Browser window
 
 ## In Video-Streaming Demonstration Section
-
-Show User 1: For the video from webcam ; 
-Show User 2: For the video with 3 frames only
+on path '/stream' one can stream the video from the computer streaming that video
