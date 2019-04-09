@@ -2,9 +2,13 @@
 
 ## Installing Dependencies
 >pip install opencv-python
+
 >pip install flask 
+
 >pip install flask-socketio
+
 >pip install flask-mysql
+
 >pip install PyQt5
 
 ## Setup Database
