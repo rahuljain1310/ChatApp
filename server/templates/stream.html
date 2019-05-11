@@ -6,7 +6,11 @@
   <body>
     <h1>Video Streaming Demonstration</h1>
     <form class="video" action="" method="POST">
-      <input class="user"/> 
+      <!-- <input class="user"/>  -->
+      <select class="user">
+        <option>1</option>
+        <option>2</option>
+      </select>
       <input type="submit"/>
     </form>
     <img class="uservideo1"/>
@@ -20,7 +24,7 @@
           return btoa(String.fromCharCode.apply(null, new Uint8Array(str)));
       }
       // Connection To Socket
-      var stream_socket = io.connect('http://' + document.domain + ':' + location.port+'/stream')
+      var stream_socket = io.connect('http://' + document.domain + ':' + location.port)
       var sendframe = false
       var userid 
       stream_socket.on( 'connect', function() {
@@ -29,21 +33,28 @@
       
       $('form.video').on( 'submit', function(e) {
           e.preventDefault()
-          userid = $( 'input.user' ).val()
-          console.log("User ID: "+userid)
-          if(userid==1 || userid==2) sendframe=true  
-          if(sendframe) socket.emit( 'send frame bundle', {user:userid}, namespace="/stream")
-          console.log("Requesting frames...")
+          // userid = $( 'input.user' ).val()
+          // console.log("User ID: "+userid)
+          // if(userid==1 || userid==2) sendframe=true  
+          // if(sendframe) stream_socket.emit( 'send frame bundle', {user:userid}, namespace="/stream")
+
+          // Without Send Frame and Sending Player Info
+          player = $( 'select.user' ).val()
+          if(player==1 || player==2) stream_socket.emit( 'send frame bundle', {'player_id':player})
+          console.log("Player ID: "+player+" Sending frames...")
       })
       stream_socket.on('fr',function(msg) {
         console.log("Frame Received from User: "+msg.user)
-        if(sendframe) stream_socket.emit( 'send each frame', namespace="/stream")
+        // if(sendframe) stream_socket.emit( 'send each frame', namespace="/stream")
+        // stream_socket.emit( 'send each frame', namespace="/stream")
         if(msg.user=='1') {
           $( 'img.uservideo1' ).attr("src","data:image/jpeg;base64,"+hexToBase64(msg.data))
+          stream_socket.emit( 'send each frame', namespace="/stream")
           // stream_socket.emit( 'send each frame', {user:'1'}, namespace="/stream")
-        } 
+        }
         if(msg.user=='2') {
            $( 'img.uservideo2' ).attr("src","data:image/jpeg;base64,"+hexToBase64(msg.data))
+           stream_socket.emit( 'send each frame', namespace="/stream")
           //  stream_socket.emit( 'send each frame', {user:'2'}, namespace="/stream")
         }
       })

@@ -4,9 +4,10 @@ from flask import Flask,render_template,Response, request, session, abort, flash
 from flask import send_file
 from flask_socketio import SocketIO
 from flaskext.mysql import MySQL
-from camera import Camera
+# from camera import Camera
 import os
 import threading
+import random 
 # import pickle
 # import json as js
 
@@ -16,7 +17,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 app.config['PORT']=5000
 app.config['THREADED']=True
-app.config['DEBUG']=True
+app.config['DEBUG']=True 
 mysql = MySQL()
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = ''
@@ -26,9 +27,8 @@ mysql.init_app(app)
 conn = mysql.connect()
 cursor =conn.cursor()
 socketio = SocketIO(app)
-# camera=cv2.VideoCapture(0)
-# player = 0
-
+camera=cv2.VideoCapture(0)
+frames = [open(f + '.jpg', 'rb').read() for f in ['1', '2', '3']]
 
 @app.route('/')
 def home():
@@ -49,13 +49,13 @@ def login():
 @app.route('/login_user', methods=['POST','GET'])
 def check_login():
     x = request.form['username']
-    y = request.form['player']
+    # y = request.form['player']
     cursor.execute('select distinct * from users where username = %(username)s',{'username':x})
     records = cursor.fetchall()
     pair = records[0]
     if request.form['password'] == pair[0]:
         session['username'] = x
-        session['player'] = y
+        # session['player'] = y
         session['logged_in'] = True
     else:
         flash('wrong password!')
@@ -75,10 +75,12 @@ def do_user_logout():
     session['logged_in'] = False
     return redirect('/login') 
 
+# Url for Download
 @app.route('/download')
 def download_files():
     return render_template("download.html")
 
+# Api for Downloading Files
 @app.route('/files/<filename>')
 def downloadFile(filename):
     path = 'Download/'+filename
@@ -99,9 +101,12 @@ def stream_user():
         return redirect('/login')
     return render_template("streamuser.html")
 
-def gen(camera):
-    frame = camera.get_frame()
-    return frame
+# def gen(camera):
+#     frame = camera.get_frame()
+#     return frame
+
+def camera_frame():
+    return frames[random.randint(0,2)]
 
 # def get_frame():
 #     camera_port=0
@@ -119,7 +124,7 @@ def gen(camera):
 #     del(camera)
 
 def send_frame():
-    camera=cv2.VideoCapture(0)
+    # camera=cv2.VideoCapture(0)
     retval,im = camera.read()
     imgencode = cv2.imencode('.jpg',im)[1]
     stringData=imgencode.tostring()
@@ -142,33 +147,37 @@ def handle_my_custom_event(json, methods=['GET', 'POST']):
 
 @socketio.on("send frame bundle")
 def send_video(json, methods=['GET', 'POST']):
-    # log = 'Recording Started'
-    # print(log)
-    # cursor.execute('INSERT INTO log VALUES (%s)',log)
-    # conn.commit()
-    # userid = 0
-    # for key, value in json.items():
-    #     global player
-    #     player = value
-    # socketio.emit('fr', {'user':player,'data': send_frame(camera)})
-    # socketio.emit('fr', {'user': player,'data': send_frame(camera)},broadcast=True)
+    for key, value in json.items():
+        session['player'] = value
     player = session.get('player')
-    print(player)
-    print(session.get('username'))
+    log = 'Recording Started By Player: '+player
+    print(log)
+    cursor.execute('INSERT INTO log VALUES (%s)',log)
+    conn.commit()
+    print("Username of Player"+session.get('username'))
     if(player=='1'):
         socketio.emit('fr', {'user': player,'data': send_frame()},broadcast=True)
     if(player=='2'):
-        socketio.emit('fr', {'user': player,'data': gen(Camera())},broadcast=True)
+        # socketio.emit('fr', {'user': player,'data': gen(Camera())},broadcast=True)        
+        socketio.emit('fr', {'user': player,'data': camera_frame()},broadcast=True)
+
 
 @socketio.on("send each frame")
 def send_each_frame(json, methods=['GET','POST']):
-    # print("send frame")
-    # socketio.emit('fr', {'user': player,'data': send_frame(camera)},broadcast=True)
     player = session.get('player')
+    try:
+        print("Frame Broadcasted To the Client from Player: "+player)
+    except:
+        pass
+    # print(player)
     if(player=='1'):
         socketio.emit('fr', {'user': player,'data': send_frame()},broadcast=True)
     if(player=='2'):
-        socketio.emit('fr', {'user': player,'data': gen(Camera())},broadcast=True)
+        ## TO send frame from Frame Array
+        socketio.emit('fr', {'user': player,'data': camera_frame()},broadcast=True)  
+        ## Use Send Frame to send frame from Camera
+        # socketio.emit('fr', {'user': player,'data': send_frame()},broadcast=True)  
+
 # =============================================================================
 # class FlaskThread(QThread):
 #     def __init__(self, application):
@@ -179,6 +188,7 @@ def send_each_frame(json, methods=['GET','POST']):
 #     def run(self):
 #         socketio.run(self.application)
 # =============================================================================    
+
 if __name__ == '__main__':    
    socketio.run(app,host='0.0.0.0')
    # app.run()
