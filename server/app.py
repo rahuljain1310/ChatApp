@@ -1,19 +1,22 @@
 import sys
 import cv2
-from flask import Flask,render_template,Response, request, session, abort, flash,redirect
+from flask import Flask,render_template,Response, request, session, abort, flash, redirect
+from flask import send_file
 from flask_socketio import SocketIO
 from flaskext.mysql import MySQL
 from camera import Camera
+import os
 import threading
-import pickle
-import json as js
+# import pickle
+# import json as js
 
 # PORT = 5000
 # ROOT_URL = 'http://0.0.0.0:{}'.format(PORT)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 app.config['PORT']=5000
-# app.config['DEBUG']=True
+app.config['THREADED']=True
+app.config['DEBUG']=True
 mysql = MySQL()
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = ''
@@ -23,12 +26,14 @@ mysql.init_app(app)
 conn = mysql.connect()
 cursor =conn.cursor()
 socketio = SocketIO(app)
+# camera=cv2.VideoCapture(0)
+# player = 0
 
-camera=cv2.VideoCapture(0)
 
 @app.route('/')
 def home():
     if not session.get('logged_in'):
+        print("Not Logged In. Redirecting ....")
         return redirect('/login')
     else:
         return render_template('index.html')
@@ -44,11 +49,13 @@ def login():
 @app.route('/login_user', methods=['POST','GET'])
 def check_login():
     x = request.form['username']
-    cursor.execute('select * from users where username = %(username)s',{'username':x})
+    y = request.form['player']
+    cursor.execute('select distinct * from users where username = %(username)s',{'username':x})
     records = cursor.fetchall()
     pair = records[0]
     if request.form['password'] == pair[0]:
         session['username'] = x
+        session['player'] = y
         session['logged_in'] = True
     else:
         flash('wrong password!')
@@ -61,43 +68,58 @@ def do_user_signup():
     cursor.execute('INSERT INTO USERS VALUES (%s,%s)',(x,y))
     conn.commit()
     session['logged_in'] = True
-    return redirect('/login')
+    return redirect('/')
 
 @app.route('/logout', methods=['POST'])
 def do_user_logout():
     session['logged_in'] = False
-    return redirect('/login')
+    return redirect('/login') 
+
+@app.route('/download')
+def download_files():
+    return render_template("download.html")
+
+@app.route('/files/<filename>')
+def downloadFile(filename):
+    path = 'Download/'+filename
+    folder = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(folder, path)
+    return send_file(path, attachment_filename=filename,as_attachment=True)
+
 
 @app.route('/stream')
 def stream():
+    if not session.get('logged_in'):
+        return redirect('/login')
     return render_template("stream.html")
 
 @app.route('/streamuser')
 def stream_user():
+    if not session.get('logged_in'):
+        return redirect('/login')
     return render_template("streamuser.html")
 
-# def gen(camera):
+def gen(camera):
+    frame = camera.get_frame()
+    return frame
+
+# def get_frame():
+#     camera_port=0
+#     # ramp_frames=100
+#     camera=cv2.VideoCapture(camera_port)
 #     while True:
-#         frame = camera.get_frame()
+#         retval, im = camera.read()
+#         imgencode=cv2.imencode('.jpg',im)[1]
+#         data = pickle.dumps(imgencode, 0)
+#         size = len(data)
+#         stringData=imgencode.tostring()
 #         yield (b'--frame\r\n'
-#                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+#             b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
+#     camera.release()
+#     del(camera)
 
-def get_frame():
-    camera_port=0
-    # ramp_frames=100
-    camera=cv2.VideoCapture(camera_port)
-    while True:
-        retval, im = camera.read()
-        imgencode=cv2.imencode('.jpg',im)[1]
-        data = pickle.dumps(imgencode, 0)
-        size = len(data)
-        stringData=imgencode.tostring()
-        yield (b'--frame\r\n'
-            b'Content-Type: text/plain\r\n\r\n'+stringData+b'\r\n')
-    camera.release()
-    del(camera)
-
-def send_frame(camera):
+def send_frame():
+    camera=cv2.VideoCapture(0)
     retval,im = camera.read()
     imgencode = cv2.imencode('.jpg',im)[1]
     stringData=imgencode.tostring()
@@ -120,15 +142,33 @@ def handle_my_custom_event(json, methods=['GET', 'POST']):
 
 @socketio.on("send frame bundle")
 def send_video(json, methods=['GET', 'POST']):
-    log = 'Recording Started'
-    print(log)
-    cursor.execute('INSERT INTO log VALUES (%s)',log)
-    conn.commit()
-    socketio.emit('fr', {'data': send_frame(camera)})
+    # log = 'Recording Started'
+    # print(log)
+    # cursor.execute('INSERT INTO log VALUES (%s)',log)
+    # conn.commit()
+    # userid = 0
+    # for key, value in json.items():
+    #     global player
+    #     player = value
+    # socketio.emit('fr', {'user':player,'data': send_frame(camera)})
+    # socketio.emit('fr', {'user': player,'data': send_frame(camera)},broadcast=True)
+    player = session.get('player')
+    print(player)
+    print(session.get('username'))
+    if(player=='1'):
+        socketio.emit('fr', {'user': player,'data': send_frame()},broadcast=True)
+    if(player=='2'):
+        socketio.emit('fr', {'user': player,'data': gen(Camera())},broadcast=True)
 
 @socketio.on("send each frame")
 def send_each_frame(json, methods=['GET','POST']):
-    socketio.emit('fr', {'data': send_frame(camera)},broadcast=True)
+    # print("send frame")
+    # socketio.emit('fr', {'user': player,'data': send_frame(camera)},broadcast=True)
+    player = session.get('player')
+    if(player=='1'):
+        socketio.emit('fr', {'user': player,'data': send_frame()},broadcast=True)
+    if(player=='2'):
+        socketio.emit('fr', {'user': player,'data': gen(Camera())},broadcast=True)
 # =============================================================================
 # class FlaskThread(QThread):
 #     def __init__(self, application):

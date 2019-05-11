@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <title>Flask_Chat_App</title>
+  </head>
+  <body>
+      <a href='/files/sample.pdf' target="blank">Sample.pdf</a>
+      <a href='/files/1.jpg' target="blank">Image 1</a>
+      <a href='/files/2.jpg' target="blank">Image 2</a>
+      <a href='/files/3.jpg' target="blank">Image 3</a>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+    <script type="text/javascript">
+      var socket = io.connect('http://' + document.domain + ':' + location.port);
+      socket.on( 'connect', function() {
+        socket.emit( 'my event', {
+          data: 'User Connected'
+        })
+        var download = $( 'a' ).on( 'click', function(e) {
+          e.preventDefault()
+          console.log("Requesting File")
+          socket.emit( 'file_download',{
+            filename: 'sample.pdf'
+          })
+
+        })
+      })
+    </script>
+
+  </body>
+  </html>
