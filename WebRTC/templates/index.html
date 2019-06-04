@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Realtime communication with WebRTC</title>
+  <link rel="stylesheet"  type="text/css" href="{{url_for('static', filename='main.css')}}" />
+</head>
+<body>
+  <!-- <h1>Realtime communication with WebRTC</h1> -->
+  <div id="videos">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+  <div>
+    <!-- <button id="startButton">Start</button> -->
+    <!-- <button id="callButton">Call</button> -->
+    <!-- <button id="hangupButton">Hang Up</button> -->
+    <button id="logout" onclick="window.location.href = '/logout'">Logout</button>
+  </div>
+
+  <!-- This file is automatically added/served when running "node index.js". -->
+  <!-- <script src="/socket.io/socket.io.js"></script> -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    var socket = io();
+    socket.on('connect', () => socket.emit('my event', {data: 'I\'m connected!'}));
+    console.log("Socket Connected")
+  </script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="{{url_for('static', filename='js/main.js')}}"></script>
+</body>
+
+</html>

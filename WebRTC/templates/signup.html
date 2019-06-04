@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Flask_Chat_App</title>
+    <link rel="stylesheet" type="text/css" href="{{  url_for('static', filename='login.css') }}"/>
+</head>
+<body>
+<div class="login-card">
+    <div class="login-card-content">
+        <div class="header">
+        <!-- <div class="logo">
+            <div>ChatApp <br>-Developed By Rahul</div>
+        </div> -->
+        <h2>Chat<span class="highlight">App</span></h2>
+        <h3>IITD</h3>
+        <h2>-</h2>
+        <h2>Sign Up</h2>
+        </div>
+        <form class="form" action="/signup_user" method="POST">
+            <div class="form-field username">
+                <div class="icon">
+                    <i class="far fa-user"></i>
+                </div>
+                <input type="text" placeholder="Username" name="username">
+            </div>
+            <div class="form-field password">
+                <div class="icon">
+                <i class="fas fa-lock"></i>
+                </div>
+                <input type="password" placeholder="Password" name="password">
+            </div>
+            <div class="form-field email">
+                <div class="icon">
+                <i class="fas fa-lock"></i>
+                </div>
+                <input type="text" placeholder="Email-Id" name="email">
+            </div>
+            <div class="form-field first-name">
+                <div class="icon">
+                <i class="fas fa-lock"></i>
+                </div>
+                <input type="text" placeholder="First Name" name="firstname">
+            </div>
+            <div class="form-field last-name">
+                <div class="icon">
+                <i class="fas fa-lock"></i>
+                </div>
+                <input type="text" placeholder="Last Name" name="lastname">
+            </div>
+            <button type="submit">
+                Sign Up
+            </button>
+            <div>
+                Already have an account? <a href="/login">Login</a>
+            </div>
+        </form>
+    </div>
+    <div class="login-card-footer">
+        <a href="">Forgot password?</a>
+    </div>
+    </div>
+    <script>
+        document.getElementsByTagName("h1")[0].style.fontSize = "80px";
+    </script>
+</body>
+</html>

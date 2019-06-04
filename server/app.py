@@ -50,7 +50,7 @@ def login():
 def check_login():
     x = request.form['username']
     # y = request.form['player']
-    cursor.execute('select distinct * from users where username = %(username)s',{'username':x})
+    cursor.execute('select distinct * from userlogin where username = %(username)s',{'username':x})
     records = cursor.fetchall()
     pair = records[0]
     if request.form['password'] == pair[0]:
@@ -65,10 +65,15 @@ def check_login():
 def do_user_signup():
     x = request.form['username']
     y = request.form['password']
-    cursor.execute('INSERT INTO USERS VALUES (%s,%s)',(x,y))
-    conn.commit()
-    session['logged_in'] = True
-    return redirect('/')
+    cursor.execute('select distinct * from userlogin where username = %(username)s',{'username':x})
+    records = cursor.fetchall()
+    if(len(records)>=1):
+        redirect('signup_user')
+    else:
+        cursor.execute('INSERT INTO USERS VALUES (%s,%s)',(x,y))
+        conn.commit()
+        session['logged_in'] = True
+        return redirect('/')
 
 @app.route('/logout', methods=['POST'])
 def do_user_logout():
@@ -144,6 +149,14 @@ def handle_my_custom_event(json, methods=['GET', 'POST']):
     cursor.execute('INSERT INTO log VALUES (%s)',log)
     conn.commit()
     socketio.emit('my response', json, callback=messageReceived)
+
+@socketio.on('test message')
+def handle_my_custom_event(json, methods=['GET', 'POST']):
+    log = 'received message:'+str(json)
+    print(log)
+    # cursor.execute('INSERT INTO log VALUES (%s)',log)
+    # conn.commit()
+    # socketio.emit('my response', json, callback=messageReceived)
 
 @socketio.on("send frame bundle")
 def send_video(json, methods=['GET', 'POST']):
