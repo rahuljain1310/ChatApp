@@ -1,0 +1,24 @@
+.App {
+  text-align: center;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 100%;
+  grid-template-columns: 30% 70%;
+  grid-template-areas: "info-pane video-pane";
+  background-image: linear-gradient(#fe7763, #fc3a5d);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  justify-content: center;
+}
+
+.info-pane {
+  grid-area: "info-pane";
+  background-color: white;
+}
+
+.video-pane {
+  grid-area: "video-pane";
+}

@@ -12,6 +12,7 @@ from flask_socketio import join_room, leave_room
 from flaskext.mysql import MySQL
 
 app = Flask(__name__)
+# app = Flask(__name__, static_folder="./chatapphome/build/static", template_folder="./chatapphome/build")
 app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 app.config['PORT'] = 5000
 app.config['THREADED'] = True
@@ -177,10 +178,15 @@ def log(arguments):
     socketio.emit('log', array)
 
 ## Socket Communication
+@socketio.on('connect')
+def connect():
+    print("Client Connected")
+    # socketio.emit('log',"Another Client Connected To The Server")
+
 @socketio.on('message')
 def message(json):
     print("Client said: "+str(json))
-    socketio.emit('message', json)
+    socketio.emit('message', json, include_self=False)
 
 @socketio.on('create or join')
 def create_or_join(room):
@@ -195,13 +201,13 @@ def create_or_join(room):
         join_room(room)
         clients[room] = [request.sid] 
         print("NEW ROOM: "+str(request.sid)+" Created room: "+str(room))
-        socketio.emit('created',room)
-    elif (numClients==1):
+        socketio.emit('created',room,room=room)
+    elif (numClients==1 or numClients==2):
         join_room(room)
         clients[room].append(request.sid)
-        socketio.emit('join',room, room=room)
+        socketio.emit('join',{'room':room, 'numClients': numClients+1}, room=room,include_self=False)
         print("EXISTING ROOM: "+str(request.sid)+ "Joined room: "+str(room))
-        socketio.emit('joined',room)
+        socketio.emit('joined',{'room':room, 'roomid': numClients+1,'numClients': numClients+1},room=room)
     else:
         socketio.emit('full',room)
     print(clients)
