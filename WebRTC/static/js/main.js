@@ -5,12 +5,13 @@ var isInitiator = false;
 var isStarted = false;
 var localStream;
 var pc;
-var pc2;
+var pc_array = [null, null, null, null, null];
 var remoteStream;
 var turnReady;
 var roomid = -1;
 var totalClient = 0;
-var ClientIdConnected;
+var PeerId;
+var PeerToAnswer;
 
 var pcConfig = {
   'iceServers': [{
@@ -44,7 +45,7 @@ if (room !== '') {
 
 socket.on('created', function(room) {
   console.log('Created room ' + room);
-  // isInitiator = true;
+  isInitiator = true,
   totalClient = 1;
   roomid = 1;
 });
@@ -69,6 +70,7 @@ socket.on('joined', function(dict) {
     remoteVideo = document.querySelector('#remoteVideo1');
   }
   totalClient = dict.numClients
+  PeerToAnswer = totalClient
   console.log("Roomid: "+dict.roomid+' joined: ' + dict.room+",Total Clients: "+totalClient);
   isChannelReady = true;
   isStarted = false;
@@ -83,6 +85,7 @@ socket.on('log', function(array) {
 
 function sendMessage(message) {
   console.log('Client sending message: ', message);
+  if(typeof message === 'object') message['sendBy'] = roomid.toString()
   socket.emit('message', message);
 }
 
@@ -91,19 +94,22 @@ socket.on('message', function(message) {
   if (message === 'got user media') {
     maybeStart();
   } else if (message.type === 'offer') {
-    if (!isInitiator && !isStarted && message.offer_id===roomid) {
-      maybeStart();
+    if (message.sendTo===roomid.toString()) {
+      if(!isInitiator && !isStarted ) maybeStart();
+      pc.setRemoteDescription(new RTCSessionDescription(message));
+      let answer_to = parseInt(message.sendBy)
+      pc_array[answer_to] = pc
+      doAnswer(answer_to);
     }
-    pc.setRemoteDescription(new RTCSessionDescription(message));
-    doAnswer();
-  } else if (message.type === 'answer' && isStarted) {
-    pc.setRemoteDescription(new RTCSessionDescription(message));
+  } else if (message.type === 'answer' && isStarted && PeerToAnswer===roomid) {
+    pc_array[message.sendBy].setRemoteDescription(new RTCSessionDescription(message));
   } else if (message.type === 'candidate' && isStarted) {
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
       candidate: message.candidate
     });
-    pc.addIceCandidate(candidate);
+    let x = parseInt(message.sendBy)
+    pc_array[x].addIceCandidate(candidate);
   } else if (message === 'bye' && isStarted) {
     handleRemoteHangup();
   }
@@ -123,11 +129,10 @@ function gotStream(stream) {
   console.log('Getting user media with constraints',  {video: true});
   console.log('Adding local stream.');
   localStream = stream;
+  console.log(stream)
   localVideo.srcObject = stream;
   sendMessage('got user media');
-  if (isInitiator) {
-    maybeStart();
-  }
+  if (isInitiator) maybeStart();
 }
 
 /////////////////////////////////////////////////////
@@ -172,11 +177,19 @@ window.onbeforeunload = function() {
 function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
-    for(let i=1;i<totalClient;i++) {
-      createPeerConnection(localStream);
-      isStarted = true;
-      console.log('isInitiator', isInitiator);
-      if (isInitiator) doCall(i);
+    if(PeerToAnswer===roomid) {
+      for(let i=1;i<totalClient;i++) {
+        setTimeout(function() {
+          pc_array[i] = createPeerConnection(localStream);
+          isStarted = true;
+          console.log('isInitiator', isInitiator);
+          remoteVideo =  document.querySelector('#remoteVideo'+i);
+          if (isInitiator) doCall(i);
+        },3000*(i-1))
+      }
+    } else {
+      pc = createPeerConnection(localStream)
+      isStarted = true
     }
   }
 }
@@ -192,6 +205,7 @@ function createPeerConnection() {
     pc.onremovestream = handleRemoteStreamRemoved;
     pc.addStream(localStream);
     console.log('Created RTCPeerConnnection');
+    return pc;
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
     alert('Cannot create RTCPeerConnection object.');
@@ -206,7 +220,7 @@ function handleIceCandidate(event) {
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
       id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
+      candidate: event.candidate.candidate,
     });
   } else {
     console.log('End of candidates.');
@@ -218,25 +232,30 @@ function handleCreateOfferError(event) {
 }
 
 function doCall(i) {
-  ClientIdConnected = i
+  PeerId = i
   console.log('Sending offer to peer');
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
+  pc_array[i].createOffer(setLocalAndSendMessage, handleCreateOfferError);
 }
 
-function doAnswer() {
+function doAnswer(i) {
   console.log('Sending answer to peer.');
-  pc.createAnswer().then(
+  PeerId = i
+  pc_array[PeerId].createAnswer().then(
     setLocalAndSendMessage,
     onCreateSessionDescriptionError
   );
 }
 
 function setLocalAndSendMessage(sessionDescription) {
-  pc.setLocalDescription(sessionDescription);
-  console.log('setLocalAndSendMessage sending message', sessionDescription);
-  sessionDescription['offer_id'] = ClientIdConnected
-  sessionDescription['answer_id'] = roomid
-  sendMessage(sessionDescription);
+  pc_array[PeerId].setLocalDescription(sessionDescription);
+  console.log(PeerId)
+  let ObjectSD = {
+    type: sessionDescription.type,
+    sdp: sessionDescription.sdp,
+    sendTo: PeerId.toString()
+  }
+  console.log('setLocalAndSendMessage sending message', ObjectSD);
+  sendMessage(ObjectSD);
 }
 
 function onCreateSessionDescriptionError(error) {
