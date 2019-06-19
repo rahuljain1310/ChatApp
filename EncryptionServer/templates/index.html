@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Realtime communication with WebRTC</title>
+</head>
+<body>
+  <button id="logout" onclick="window.location.href = '/logout'">Logout</button>
+  <!-- This file is automatically added/served when running "node index.js". -->
+  <!-- <script src="/socket.io/socket.io.js"></script> -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    var socket = io();
+    socket.on('connect', () => socket.emit('my event', {data: 'I\'m connected!'}));
+    console.log("Socket Connected")
+  </script>
+</body>
+
+</html>
