@@ -105,7 +105,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>440</y>
+      <y>460</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -145,6 +145,9 @@
       <width>351</width>
       <height>301</height>
      </rect>
+    </property>
+    <property name="interactive">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QLabel" name="label_4">
@@ -199,7 +202,7 @@
      <string>Encrypted Data</string>
     </property>
    </widget>
-   <widget class="QTextBrowser" name="textBrowser">
+   <widget class="QTextBrowser" name="EncryptedText">
     <property name="geometry">
      <rect>
       <x>800</x>
@@ -285,7 +288,7 @@
     <property name="geometry">
      <rect>
       <x>40</x>
-      <y>440</y>
+      <y>460</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -317,11 +320,11 @@
      <string>Password</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit_2">
+   <widget class="QLineEdit" name="FileInput">
     <property name="geometry">
      <rect>
       <x>40</x>
-      <y>400</y>
+      <y>380</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -338,6 +341,29 @@
     </property>
     <property name="text">
      <string>File To Receive</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="NewFileInput">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>430</y>
+      <width>251</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_10">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>410</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>New File Name</string>
     </property>
    </widget>
   </widget>

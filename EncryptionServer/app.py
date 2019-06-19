@@ -199,7 +199,7 @@ def set_user_name():
 @socketio.on('ping')
 def ping():
   logRecord("Ping Request By User")
-  socketio.emit('ping_by_user',{'message': 'Ping Request By Another User'},self_include=False)
+  socketio.emit('ping_by_user', {'message': 'Ping Request By Another User'} ,self_include=False)
 
 @socketio.on('send_file_client')
 def sendFileClient():

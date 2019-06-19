@@ -1,15 +1,29 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from Encryptor import AES_Encryptor, Generate, Blowfish_Encryptor
+from Encryptor import AES_Encryptor, Generate, Blowfish_Encryptor, DES_Encryptor
 import sys,random,cv2,os,requests
 import socketio
+import threading
 
-#==========================================================================
+##=====================================================================================================================
+## Initializations 
+##=====================================================================================================================
 
 # camera = None
 camera = cv2.VideoCapture(0)
 sio = socketio.Client()
 
-# ==========================================================================
+##=====================================================================================================================
+## Main Window 
+##=====================================================================================================================
+
+# class camThread(threading.Thread):
+# 	def __init__(self, previewName, camID):
+# 		threading.Thread.__init__(self)
+# 		self.previewName = previewName
+# 		self.camID = camID
+# 	def run(self):
+# 		print("Starting " + self.previewName)
+# 		camPreview(self.previewName, self.camID)
 
 class MainWindow(QtWidgets.QMainWindow):
 	def __init__(self, socket ,parent=None):
@@ -59,6 +73,9 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.DecryptFileButton.clicked.connect(self.decryptFile)
 		self.ui.LoginButton.clicked.connect(self.login)
 
+	def setRandomKey(self):
+		self.ui.InputKey.setText(Generate.generateRandomKey())
+	
 	def login(self):
 		username = self.ui.UsernameInput.text()
 		password = self.ui.PasswordInput.text()
@@ -68,39 +85,46 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.LogsView.append(message)
 		print(message)
 
-	def setRandomKey(self):
-		self.key = Generate.generateRandomKey()
-		self.ui.InputKey.setText(Generate.generateRandomKey())
+	def CheckExtension(self,f,ext):
+		if f.lower().endswith(ext):
+			return True
+		self.logMessage("Selected file do not '.aes' file type.")
+		return False
 
 	def encryptFile(self):
-		FileToEncrypt = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Image', 'c:\\', 'Image files (*.jpg,*.gif, *.jpeg)')[0]
+		FileToEncrypt = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Image', 'c:\\', 'All Files (*.*)')[0]
 		if FileToEncrypt:
 			if(self.ui.AES_Radio.isChecked()):
-				aes = AES_Encryptor(self.InputKey.text(),self.logMessage)
+				aes = AES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
 				aes.encrypt_file(FileToEncrypt)
 			elif (self.ui.BLOWFISH_Radio.isChecked()):
-				bf = Blowfish_Encryptor(self.InputKey.text(),self.logMessage)
+				bf = Blowfish_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
 				bf.encrypt_file(FileToEncrypt)
 			elif (self.ui.DES_Radio.isChecked()):
 				pass
-				# des = DES_Encryptor(self.InputKey.text())
-				# des.encrypt_file(FileToEncrypt)
+				des = DES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				des.encrypt_file(FileToEncrypt)
 		else:
 			self.logMessage("No File For Encryption Selected.")
 			
 	def decryptFile(self):
-		FileToDecrypt = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Encrypted File', 'c:\\', 'All Files (*)')[0]
+		FileToDecrypt = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Encrypted File', 'c:\\', 'All Files (*.*)')[0]
 		if FileToDecrypt:
 			if(self.ui.AES_Radio.isChecked()):
-				aes = AES_Encryptor(self.InputKey.text(),self.logMessage)
+				if not self.CheckExtension(FileToDecrypt,'.aes'):
+					return
+				aes = AES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
 				aes.decrypt_file(FileToDecrypt[0])
 			elif (self.ui.BLOWFISH_Radio.isChecked()):
-				bf = Blowfish_Encryptor(self.InputKey.text(),self.logMessage)
+				if not self.CheckExtension(FileToDecrypt,'.blf'):
+					return
+				bf = Blowfish_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
 				bf.decrypt_file(FileToDecrypt)
 			elif (self.ui.DES_Radio.isChecked()):
-				pass
-				# des = DES_Encryptor(self.InputKey.text())
-				# des.encrypt_file(FileToEncrypt)
+				if not self.CheckExtension(FileToDecrypt,'.des'):
+					return
+				des = DES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				des.decrypt_file(FileToDecrypt)
 		else:
 			self.logMessage("No File For Decryption Selected.")
 
@@ -125,13 +149,22 @@ class MainWindow(QtWidgets.QMainWindow):
 				self.socket.emit('offer_file',{'type':'file_send','filename':FileToSend[0]})
 
 	def receiveFile(self):
-		FileToReceive = 'trial1.jpeg'
+		FileToReceive = self.ui.FileInput.text()
+		NewFileName = self.ui.NewFileInput.text()
+		self.logMessage("Receiving File: "+FileToReceive)
 		if(FileToReceive):
-			with open(FileToReceive, 'wb') as f:
-				r = requests.get('http://localhost:5000/download/trial.jpeg')
+			with open(NewFileName, 'wb') as f:
+				r = requests.get('http://localhost:5000/download/'+FileToReceive)
 				f.write(r.content)
 				f.close()
-					
+			self.logMessage("File Received with name: "+NewFileName)
+		else:
+			self.logMessage("No input to the receive file field.")
+
+##=====================================================================================================================
+## Main Function 
+##=====================================================================================================================
+
 if __name__ == "__main__":
 	app = QtWidgets.QApplication(sys.argv)
 	window = MainWindow(sio)
