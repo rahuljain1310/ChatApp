@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1240</width>
-    <height>767</height>
+    <width>1328</width>
+    <height>842</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>30</x>
       <y>40</y>
       <width>121</width>
       <height>16</height>
@@ -33,7 +33,7 @@
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>70</x>
+      <x>60</x>
       <y>60</y>
       <width>55</width>
       <height>16</height>
@@ -46,8 +46,8 @@
    <widget class="QPushButton" name="EncryptFileButton">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>290</y>
+      <x>30</x>
+      <y>220</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -59,9 +59,9 @@
    <widget class="QRadioButton" name="AES_Radio">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>100</y>
-      <width>95</width>
+      <x>120</x>
+      <y>70</y>
+      <width>51</width>
       <height>20</height>
      </rect>
     </property>
@@ -78,9 +78,9 @@
    <widget class="QRadioButton" name="DES_Radio">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>30</x>
       <y>70</y>
-      <width>95</width>
+      <width>51</width>
       <height>20</height>
      </rect>
     </property>
@@ -91,8 +91,8 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>390</x>
-      <y>430</y>
+      <x>30</x>
+      <y>570</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -104,8 +104,8 @@
    <widget class="QPushButton" name="SendFileButton">
     <property name="geometry">
      <rect>
-      <x>180</x>
-      <y>460</y>
+      <x>170</x>
+      <y>360</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -117,8 +117,8 @@
    <widget class="QRadioButton" name="BLOWFISH_Radio">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>130</y>
+      <x>210</x>
+      <y>70</y>
       <width>95</width>
       <height>20</height>
      </rect>
@@ -130,44 +130,31 @@
    <widget class="QLineEdit" name="InputKey">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>210</y>
+      <x>30</x>
+      <y>130</y>
       <width>261</width>
       <height>22</height>
      </rect>
     </property>
    </widget>
-   <widget class="QGraphicsView" name="VideoFrame">
-    <property name="geometry">
-     <rect>
-      <x>390</x>
-      <y>70</y>
-      <width>351</width>
-      <height>301</height>
-     </rect>
-    </property>
-    <property name="interactive">
-     <bool>true</bool>
-    </property>
-   </widget>
    <widget class="QLabel" name="label_4">
     <property name="geometry">
      <rect>
-      <x>390</x>
+      <x>450</x>
       <y>40</y>
-      <width>32</width>
+      <width>121</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Video</string>
+     <string>Local Video Stream</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_5">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>180</y>
+      <x>30</x>
+      <y>110</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -179,8 +166,8 @@
    <widget class="QPushButton" name="GenerateKeyButton">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>240</y>
+      <x>30</x>
+      <y>170</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -192,7 +179,7 @@
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>800</x>
+      <x>920</x>
       <y>40</y>
       <width>101</width>
       <height>16</height>
@@ -205,54 +192,47 @@
    <widget class="QTextBrowser" name="EncryptedText">
     <property name="geometry">
      <rect>
-      <x>800</x>
+      <x>920</x>
       <y>70</y>
-      <width>411</width>
-      <height>631</height>
+      <width>371</width>
+      <height>721</height>
      </rect>
     </property>
    </widget>
    <widget class="QLineEdit" name="UsernameInput">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>530</y>
+      <x>30</x>
+      <y>460</y>
       <width>261</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+    <property name="clearButtonEnabled">
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QLabel" name="label_7">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>510</y>
+      <x>30</x>
+      <y>440</y>
       <width>71</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Username</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="LoginButton">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>620</y>
-      <width>93</width>
-      <height>28</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Login</string>
+     <string>Username:</string>
     </property>
    </widget>
    <widget class="QPushButton" name="PingButton">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>680</y>
+      <x>30</x>
+      <y>500</y>
       <width>93</width>
       <height>28</height>
      </rect>
@@ -264,18 +244,18 @@
    <widget class="QTextEdit" name="LogsView">
     <property name="geometry">
      <rect>
-      <x>390</x>
-      <y>460</y>
-      <width>351</width>
-      <height>231</height>
+      <x>30</x>
+      <y>600</y>
+      <width>391</width>
+      <height>191</height>
      </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="DecryptFileButton">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>290</y>
+      <x>160</x>
+      <y>220</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -287,8 +267,8 @@
    <widget class="QPushButton" name="ReceiveFileButton">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>460</y>
+      <x>30</x>
+      <y>360</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -297,34 +277,11 @@
      <string>Receive File</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>580</y>
-      <width>261</width>
-      <height>22</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_8">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>560</y>
-      <width>71</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Password</string>
-    </property>
-   </widget>
    <widget class="QLineEdit" name="FileInput">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>380</y>
+      <x>140</x>
+      <y>280</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -333,8 +290,8 @@
    <widget class="QLabel" name="label_9">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>360</y>
+      <x>30</x>
+      <y>280</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -346,8 +303,8 @@
    <widget class="QLineEdit" name="NewFileInput">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>430</y>
+      <x>140</x>
+      <y>320</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -356,8 +313,8 @@
    <widget class="QLabel" name="label_10">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>410</y>
+      <x>30</x>
+      <y>320</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -366,13 +323,143 @@
      <string>New File Name</string>
     </property>
    </widget>
+   <widget class="QLabel" name="LocalVideoStream">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>70</y>
+      <width>411</width>
+      <height>321</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>encryption.jpg</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QTextBrowser" name="EncryptedFrame">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>560</y>
+      <width>411</width>
+      <height>231</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>530</y>
+      <width>111</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Frame Byte String</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="CallUserButton">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>470</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Call User</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_2">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>430</y>
+      <width>331</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_12">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>410</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>User To Call</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="HangUpButton">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>470</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Hang Up</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="AnswerCallButton">
+    <property name="geometry">
+     <rect>
+      <x>690</x>
+      <y>470</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Answer Call</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="StopLocalStream">
+    <property name="geometry">
+     <rect>
+      <x>782</x>
+      <y>30</y>
+      <width>81</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="StopLocalStream_2">
+    <property name="geometry">
+     <rect>
+      <x>680</x>
+      <y>30</y>
+      <width>81</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Start</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1240</width>
+     <width>1328</width>
      <height>26</height>
     </rect>
    </property>

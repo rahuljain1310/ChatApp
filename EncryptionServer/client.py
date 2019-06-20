@@ -2,36 +2,94 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from Encryptor import AES_Encryptor, Generate, Blowfish_Encryptor, DES_Encryptor
 import sys,random,cv2,os,requests
 import socketio
+import json
 import threading
+
 
 ##=====================================================================================================================
 ## Initializations 
 ##=====================================================================================================================
 
-# camera = None
-camera = cv2.VideoCapture(0)
-sio = socketio.Client()
+class UserDetails():
+	Username = 'Username'
+	UserID = -1
+	UserState = 'Logged_Off'
+	EnableLocalStreaming = True
+
+	@staticmethod
+	def getUsername():
+		return UserDetails.Username
+	
+	@staticmethod
+	def getUserID():
+		return UserDetails.UserID
+	
+	@staticmethod
+	def getUserState():
+		return UserDetails.UserState
+	
+##=====================================================================================================================
+## Local Stream Thread 
+##=====================================================================================================================
+
+class LocalStream(threading.Thread):
+	def __init__(self, camID, videoframe, encBox):
+		threading.Thread.__init__(self)
+		self.camID = camID
+		self.videoFrame = videoframe
+		self.encryptBox = encBox
+	def run(self):
+		print("Starting Local Stream")
+		camera=cv2.VideoCapture(self.camID)
+		while True:
+			retval,im = camera.read()
+			imgencode = cv2.imencode('.jpg',im)[1]
+			stringData=imgencode.tostring()
+			# self.encryptBox.setText(str(stringData))
+			pixmap = QtGui.QPixmap()
+			pixmap.loadFromData(imgencode,'JPG')
+			self.videoFrame.setPixmap(pixmap)
+			if not UserDetails.EnableLocalStreaming:
+				break
+		return
 
 ##=====================================================================================================================
-## Main Window 
+## Login Dialog Box
 ##=====================================================================================================================
 
-# class camThread(threading.Thread):
-# 	def __init__(self, previewName, camID):
-# 		threading.Thread.__init__(self)
-# 		self.previewName = previewName
-# 		self.camID = camID
-# 	def run(self):
-# 		print("Starting " + self.previewName)
-# 		camPreview(self.previewName, self.camID)
+class Login(QtWidgets.QDialog):
+	def __init__(self, parent=None):
+		super(Login, self).__init__(parent)
+		self.lui = uic.loadUi('Login.ui', self)
+		self.LoginButton.clicked.connect(self.handleLogin)
+
+	def handleLogin(self):
+		print('Login Successful')
+		form = {
+			'username': self.lui.UsernameInput.text(),
+			'password': self.lui.PasswordInput.text(),
+		}
+		r = requests.post('http://localhost:5000/login_user_exe',json=form)
+		result = json.loads(r.content)
+		if(result['code']==200):
+			UserDetails.Username = form['username']
+			UserDetails.UserState = 'Logged_In'
+			self.accept()
+		else:
+			QtWidgets.QMessageBox.warning(self, 'Error', 'Incorrect Username or Password.')
+
+##=====================================================================================================================
+## MainWindow 
+##=====================================================================================================================
 
 class MainWindow(QtWidgets.QMainWindow):
 	def __init__(self, socket ,parent=None):
 		super(MainWindow, self).__init__(parent)
 		self.ui = uic.loadUi('UI.ui', self)
 		self.socket = socket
-		self.username = ''
 		self.setupSignal()
+		self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame)
+		self.localStream.start()
 
 		@socket.on('connect')
 		def on_connect():
@@ -40,13 +98,6 @@ class MainWindow(QtWidgets.QMainWindow):
 		@socket.on('disconnect')
 		def on_disconnect():
 			self.logMessage('connection terminated')
-
-		@socket.on('get_frame')
-		def get_frame():
-			retval,im = camera.read()
-			imgencode = cv2.imencode('.jpg',im)[1]
-			stringData=imgencode.tostring()
-			return stringData
 
 		@socket.on('ping_by_user')
 		def ping_by_user(json):
@@ -60,27 +111,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
 	def setupSignal(self):
 		self.setRandomKey()
-		self.setUserName("User"+''.join(chr(random.randint(0x41, 0x50)) for i in range(4)))
-		self.ui.UsernameInput.setText(self.username)
+		self.setUserName(UserDetails.getUsername())
 
 		## Connect
-		self.ui.LoginButton.clicked.connect(self.login)
 		self.ui.GenerateKeyButton.clicked.connect(self.setRandomKey)
 		self.ui.EncryptFileButton.clicked.connect(self.encryptFile)
 		self.ui.SendFileButton.clicked.connect(self.sendFile)
 		self.ui.PingButton.clicked.connect(self.pingUsers)
 		self.ui.ReceiveFileButton.clicked.connect(self.receiveFile)
 		self.ui.DecryptFileButton.clicked.connect(self.decryptFile)
-		self.ui.LoginButton.clicked.connect(self.login)
 
 	def setRandomKey(self):
 		self.ui.InputKey.setText(Generate.generateRandomKey())
 	
-	def login(self):
-		username = self.ui.UsernameInput.text()
-		password = self.ui.PasswordInput.text()
-		form = {'username': username, 'password': password}
-
 	def logMessage(self,message):
 		self.ui.LogsView.append(message)
 		print(message)
@@ -167,10 +210,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
 	app = QtWidgets.QApplication(sys.argv)
-	window = MainWindow(sio)
-	window.show()
-	while app.exec_()==None:
-		pass
-	sio.disconnect()
-	sys.exit()
-	# sys.exit(app.exec_())
+	login = Login()
+	if login.exec_() == QtWidgets.QDialog.Accepted:
+		sio = socketio.Client()
+		window = MainWindow(sio)
+		window.show()
+		while app.exec_()==None:
+			pass
+		sio.disconnect()
+		UserDetails.EnableLocalStreaming = False
+		sys.exit()
+		# sys.exit(app.exec_())

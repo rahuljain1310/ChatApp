@@ -44,6 +44,7 @@ class AES_Encryptor:
 					outfile.write(encryptedText)
 			outfile.close()
 		infile.close()
+		self.log("AES Encryption Completed.")
 
 	def decrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
 		if not out_filename:

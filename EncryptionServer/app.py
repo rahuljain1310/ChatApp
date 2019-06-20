@@ -3,12 +3,13 @@ import cv2
 import os
 import threading
 import random 
+import json
 from werkzeug.utils import secure_filename
 
 from passlib.hash import pbkdf2_sha256
 hasher = pbkdf2_sha256.using(rounds=12856)
 
-from flask import Flask,render_template,Response, request, session, abort, flash, redirect
+from flask import Flask,render_template,Response, request, session, abort, flash, redirect,jsonify
 from flask import send_file
 from flask_socketio import SocketIO
 from flaskext.mysql import MySQL
@@ -160,25 +161,24 @@ def do_user_signup():
 
 @app.route('/login_user_exe',methods=['POST'])
 def exe_user_login():
-  x = request.form['username'].strip()
-  y = request.form['password'].strip()
+  form = json.loads(request.data)
+  x = form['username'].strip()
+  y = form['password'].strip()
   x = checkUsername(x)
   if(x=="Error"):
-    flash('Username Invalid!')
-    redirect('/login') 
+    return jsonify({'status': logAndResponse("Username Invalid")})
   cursor = conn.cursor()
   cursor.execute('SELECT * FROM UserLogin WHERE USERNAME = %(username)s',{'username':x})
   records = cursor.fetchone()
   cursor.close()
   try:
     if (hasher.verify(y,records[2])):
-      MarkUserSessionLogin(x)
-      return redirect('/')
+      return jsonify({'status':'OK','code':200})
     else:
-      flash('wrong password!')
+      return jsonify({'status': logAndResponse('Login Attempt Failed: User with username '+x+ 'does not exist.'),'code':404})
   except:
-      print("User with username "+x+" does not exist.")
-  return redirect('/login')
+      return jsonify({'status': logAndResponse("Login Attempt Failed: User with username "+x+" does not exist."),'code':404})
+  return jsonify({'status': logAndResponse('Login Attempt Failed.'),'code':404})
 
 ##========================================================================================
 ## Socket Functions
@@ -192,14 +192,10 @@ def connect():
 def disconnect():
   logRecord("User Disconnected")
 
-@socketio.on('set_user_name')
-def set_user_name():
-  pass
-
 @socketio.on('ping')
 def ping():
-  logRecord("Ping Request By User")
-  socketio.emit('ping_by_user', {'message': 'Ping Request By Another User'} ,self_include=False)
+  logRecord("Ping Request By User. Emitting Ping.")
+  socketio.emit('ping_by_user', {'message': 'Ping Request By Another User'} ,include_self=False)
 
 @socketio.on('send_file_client')
 def sendFileClient():
