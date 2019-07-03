@@ -2,6 +2,11 @@ import os, random, struct
 from Crypto.Cipher import AES, Blowfish
 from des import DesKey
 from hashlib import sha256
+from PyQt5.QtWidgets import QTextBrowser
+
+class UIFunctions:
+	log = print
+	encryptTextBox = QTextBrowser
 
 class Generate:
 	@staticmethod
@@ -12,39 +17,90 @@ class Generate:
 	def generateByteString (size = 16):
 		string = Generate.generateRandomKey(size)
 		return string.encode()
+	
+	@staticmethod
+	def keyGenerator(bs,key):
+		info = [key[i:i+bs] for i in range(0, len(key), bs)]
+		while True:
+			for c in info:
+				yield(c)
+
+def PaddKey(key,bs):
+	return key + (' ' * (bs - len(key)%bs)).encode()
+
+
+class FileCrypto:
+	@staticmethod
+	def encrypt_CBC(encryptFunc, iv, blockSize, in_filename,out_filename,chunksize):
+		filesize = os.path.getsize(in_filename)
+		UIFunctions.log("Size of file: "+str(filesize)+" bytes")
+		UIFunctions.log('File Selected: '+str(in_filename))
+		with open(in_filename, 'rb') as infile:
+			with open(out_filename, 'wb') as outfile:
+				outfile.write(struct.pack('Q', filesize))
+				outfile.write(iv)
+				while True:
+					chunk = infile.read(chunksize)
+					if len(chunk) == 0:
+						break
+					if len(chunk) % blockSize != 0:
+						chunk += (' ' * (blockSize - len(chunk)%blockSize)).encode()
+					encryptedText = encryptFunc(chunk)
+					UIFunctions.encryptTextBox.setText(str(encryptedText))
+					outfile.write(encryptedText)
+		UIFunctions.log("Encryption Completed")
+
+	@staticmethod
+	def encrypt_CBC_LongKey(key, encryptFunc, iv, blockSize, in_filename, out_filename,chunksize):
+		filesize = os.path.getsize(in_filename)
+		UIFunctions.log("Size of file: "+str(filesize)+" bytes")
+		UIFunctions.log('File Selected: '+str(in_filename))
+		keyGen = Generate.keyGenerator(blockSize,key)
+		with open(in_filename, 'rb') as infile:
+			with open(out_filename, 'wb') as outfile:
+				outfile.write(struct.pack('Q', filesize))
+				outfile.write(iv)
+				while True:
+					chunk = infile.read(chunksize)
+					if len(chunk) == 0:
+						break
+					if len(chunk) % blockSize != 0:
+						chunk += (' ' * (blockSize - len(chunk)%blockSize)).encode()
+					blockKey = keyGen.__next__()
+					encryptedText = encryptFunc(blockKey,chunk)
+					UIFunctions.encryptTextBox.setText(str(encryptedText))
+					outfile.write(encryptedText)
+		UIFunctions.log("Encryption Completed")
+
+	# @staticmethod
+	# def decrypt_file_CBC(decryptFunc,origsize, blockSize, in_filename, out_filename,chunksize):
+	# 	with open(in_filename, 'rb') as infile:
+	# 		with open(out_filename, 'wb') as outfile:
+	# 			while True:
+	# 				chunk = infile.read(chunksize)
+	# 				if len(chunk) == 0:
+	# 					break
+	# 				outfile.write(decryptFunc(chunk))
+	# 			outfile.truncate(origsize)
+	# 		UIFunctions.log("Decryption Completed")
 
 class AES_Encryptor:	
-	def __init__(self, key, log=None, textbox=None):
-		self.key = key
-		self.log = log
-		self.textbox = textbox
-		self.keyhash = sha256(key.encode()).digest()
-		print("KeyHash is"+str(self.keyhash))
-		self.iv = Generate.generateByteString(16)
-		print(self.iv)
-
+	def __init__(self, key):
+		self.blockSize = 16
+		self.key = PaddKey(key,self.blockSize)
+	
 	def encrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
-		encryptor = AES.new(self.keyhash, AES.MODE_CBC, self.iv)
+		iv = Generate.generateByteString(self.blockSize)
+
+		def AES_EncryptFunc(blockSizeKey,chunk):
+			encryptor = AES.new(blockSizeKey,AES.MODE_CBC,iv)
+			return encryptor.encrypt(chunk)
+
 		if not out_filename:
-			out_filename = in_filename + '.enc'
-		filesize = os.path.getsize(in_filename)
-		self.log("AES Encryption Started. Size of file: "+str(filesize)+" bytes")
-		with open(in_filename, 'rb') as infile:
-			with open(out_filename, 'wb') as outfile:
-				outfile.write(struct.pack('Q', filesize))
-				outfile.write(self.iv)
-				while True:
-					chunk = infile.read(chunksize)
-					if len(chunk) == 0:
-						break
-					if len(chunk) % 16 != 0:
-						chunk += (' ' * (16 - len(chunk)%16)).encode()
-					encryptedText = encryptor.encrypt(chunk)
-					self.textbox.setText(str(encryptedText))
-					outfile.write(encryptedText)
-			outfile.close()
-		infile.close()
-		self.log("AES Encryption Completed.")
+			out_filename = in_filename + '.aes'
+			
+		UIFunctions.log("AES Encryption Started.")
+		FileCrypto.encrypt_CBC_LongKey(self.key, AES_EncryptFunc, iv, self.blockSize, in_filename, out_filename, chunksize)
 
 	def decrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
 		if not out_filename:
@@ -52,49 +108,38 @@ class AES_Encryptor:
 			print(out_filename)
 		with open(in_filename, 'rb') as infile:
 			origsize = struct.unpack('Q', infile.read(struct.calcsize('Q')))[0]
-			self.log("Decryption Started. Size of file: "+str(origsize)+" bytes")
+			UIFunctions.log("AES Decryption Started.")
+			UIFunctions.log("Size of file: "+str(origsize)+" bytes")
 			iv = infile.read(16)
-			decryptor = AES.new(self.keyhash, AES.MODE_CBC, iv)
+
+			def AES_DecryptFunc(blockSizeKey,chunk):
+				decryptor = AES.new(blockSizeKey,AES.MODE_CBC,iv)
+				return decryptor.decrypt(chunk)
+
+			keyGen = Generate.keyGenerator(self.blockSize,self.key)
 			with open(out_filename, 'wb') as outfile:
 				while True:
 					chunk = infile.read(chunksize)
 					if len(chunk) == 0:
 						break
-					outfile.write(decryptor.decrypt(chunk))
+					blockKey = keyGen.__next__()
+					plainText = AES_DecryptFunc(blockKey,chunk)
+					outfile.write(plainText)
 				outfile.truncate(origsize)
+			UIFunctions.log("Decryption Completed")
 
 class Blowfish_Encryptor:	
-	def __init__(self, key, log=None, textbox=None):
+	def __init__(self, key):
 		self.key = key.encode()
-		self.log = log
-		self.textbox = textbox
 		print("Key is"+str(self.key))
-		self.iv = Generate.generateByteString(Blowfish.block_size)
-		print(self.iv)
 
 	def encrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
-		cipher = Blowfish.new(self.key,Blowfish.MODE_CBC,self.iv)
-		bs = Blowfish.block_size
+		iv = Generate.generateByteString(Blowfish.block_size)
+		cipher = Blowfish.new(self.key,Blowfish.MODE_CBC,iv)
 		if not out_filename:
 			out_filename = in_filename + '.blf'
-		filesize = os.path.getsize(in_filename)
-		self.log("Blowfish Encryption Started. Size of file: "+str(filesize)+" bytes")
-		with open(in_filename, 'rb') as infile:
-			with open(out_filename, 'wb') as outfile:
-				outfile.write(struct.pack('Q', filesize))
-				outfile.write(self.iv)
-				while True:
-					chunk = infile.read(chunksize)
-					if len(chunk) == 0:
-						break
-					if len(chunk) % bs != 0:
-						chunk += (' ' * (bs - len(chunk)%bs)).encode()
-					encryptedText = cipher.encrypt(chunk)
-					self.textbox.setText(str(encryptedText))
-					outfile.write(encryptedText)
-			outfile.close()
-		infile.close()
-		self.log("Blowfish Encryption Completed.")
+		UIFunctions.log("Blowfish Encryption Started.")
+		FileCrypto.encrypt_CBC(cipher.encrypt, iv, Blowfish.block_size, in_filename,out_filename, chunksize)
 
 	def decrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
 		if not out_filename:
@@ -102,9 +147,10 @@ class Blowfish_Encryptor:
 			print(out_filename)
 		with open(in_filename, 'rb') as infile:
 			origsize = struct.unpack('Q', infile.read(struct.calcsize('Q')))[0]
-			self.log("Decryption Started. Size of file: "+str(origsize)+" bytes")
+			UIFunctions.log("Decryption Started. Size of file: "+str(origsize)+" bytes")
 			iv = infile.read(Blowfish.block_size)
 			cipher = Blowfish.new(self.key,Blowfish.MODE_CBC,iv)
+
 			with open(out_filename, 'wb') as outfile:
 				while True:
 					chunk = infile.read(chunksize)
@@ -113,45 +159,26 @@ class Blowfish_Encryptor:
 					decryptedText = cipher.decrypt(chunk)
 					outfile.write(decryptedText)
 				outfile.truncate(origsize)
-			self.log("Decryption Completed.")
+			UIFunctions.log("Decryption Completed.")
 
 class DES_Encryptor:
-	def __init__(self, key, log=None, textbox=None):
+	def __init__(self, key):
 		self.key = key.encode()
-		self.log = log
-		self.textbox = textbox
-		self.log("Key is "+str(self.key))
-		self.iv = Generate.generateByteString(8)
+		UIFunctions.log("Key is "+str(self.key))
 		self.block_size = 8
 
 	def encrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
+		iv = Generate.generateByteString(8)
 		if not out_filename:
 			out_filename = in_filename + '.des'
-		filesize = os.path.getsize(in_filename)
-
 		if not len(self.key)%8==0:
-			self.log("Key Should be of length 8,16 or 24 bytes.")
+			UIFunctions.log("Key Should be of length 8,16 or 24 bytes.")
 			return
-
-		self.log("DES Encryption Started. Size of file: "+str(filesize)+" bytes")
 		cipher = DesKey(self.key)
-		bs = self.block_size
-		with open(in_filename, 'rb') as infile:
-			with open(out_filename, 'wb') as outfile:
-				outfile.write(struct.pack('Q', filesize))
-				outfile.write(self.iv)
-				while True:
-					chunk = infile.read(chunksize)
-					if len(chunk) == 0:
-						break
-					if len(chunk) % bs != 0:
-						chunk += (' ' * (bs - len(chunk)%bs)).encode()
-					encryptedText = cipher.encrypt(chunk,initial=self.iv)
-					self.textbox.setText(str(encryptedText))
-					outfile.write(encryptedText)
-			outfile.close()
-		infile.close()
-		self.log("DES Encryption Completed.")
+		def cipherWrapper(x):
+			return cipher.encrypt(x,initial=iv)
+		UIFunctions.log("DES Encryption Started")
+		FileCrypto.encrypt_CBC(cipherWrapper, iv, self.block_size, in_filename, out_filename, chunksize)
 
 	def decrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
 		if not out_filename:
@@ -159,7 +186,7 @@ class DES_Encryptor:
 			print(out_filename)
 		with open(in_filename, 'rb') as infile:
 			origsize = struct.unpack('Q', infile.read(struct.calcsize('Q')))[0]
-			self.log("DES Decryption Started. Size of file: "+str(origsize)+" bytes")
+			UIFunctions.log("DES Decryption Started. Size of file: "+str(origsize)+" bytes")
 			iv = infile.read(Blowfish.block_size)
 			cipher = DesKey(self.key)
 			with open(out_filename, 'wb') as outfile:
@@ -170,4 +197,10 @@ class DES_Encryptor:
 					decryptedText = cipher.decrypt(chunk,initial=iv)
 					outfile.write(decryptedText)
 				outfile.truncate(origsize)
-			self.log("DES Decryption Completed.")
+			UIFunctions.log("DES Decryption Completed.")
+
+class ECC_Encryptor:
+	def __init__(self, key):
+		self.key = key.encode()
+		UIFunctions.log("Key is "+str(self.key))
+		self.block_size = 8

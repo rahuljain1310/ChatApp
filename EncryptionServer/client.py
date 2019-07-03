@@ -1,9 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from Encryptor import AES_Encryptor, Generate, Blowfish_Encryptor, DES_Encryptor
+from Encryptor import AES_Encryptor, Generate, Blowfish_Encryptor, DES_Encryptor, UIFunctions
 import sys,random,cv2,os,requests
 import socketio
 import json
 import threading
+from serial import Serial
+import time
 
 
 ##=====================================================================================================================
@@ -28,6 +30,9 @@ class UserDetails():
 	def getUserState():
 		return UserDetails.UserState
 	
+class FPGADetails():
+	BaudRate = 9600
+	PORT = 'COM3'
 ##=====================================================================================================================
 ## Local Stream Thread 
 ##=====================================================================================================================
@@ -78,6 +83,15 @@ class Login(QtWidgets.QDialog):
 		else:
 			QtWidgets.QMessageBox.warning(self, 'Error', 'Incorrect Username or Password.')
 
+# class FPGAKey(QtWidgets.QDialog):
+# 	def __init__(self, parent=None):
+# 		super(FPGAKey, self).__init__(parent)
+# 		self.fui = uic.loadUi(']FPGAKey.ui', self)
+# 		self.fui.buttonBox.OK.clicked.connect(self.handleOK)
+
+# 	def handleOK(self):
+# 		self.accept()
+
 ##=====================================================================================================================
 ## MainWindow 
 ##=====================================================================================================================
@@ -88,8 +102,8 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui = uic.loadUi('UI.ui', self)
 		self.socket = socket
 		self.setupSignal()
-		self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame)
-		self.localStream.start()
+		# self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame)
+		# self.localStream.start()
 
 		@socket.on('connect')
 		def on_connect():
@@ -112,6 +126,8 @@ class MainWindow(QtWidgets.QMainWindow):
 	def setupSignal(self):
 		self.setRandomKey()
 		self.setUserName(UserDetails.getUsername())
+		UIFunctions.log = self.logMessage
+		UIFunctions.encryptTextBox = self.ui.EncryptedText
 
 		## Connect
 		self.ui.GenerateKeyButton.clicked.connect(self.setRandomKey)
@@ -120,6 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.PingButton.clicked.connect(self.pingUsers)
 		self.ui.ReceiveFileButton.clicked.connect(self.receiveFile)
 		self.ui.DecryptFileButton.clicked.connect(self.decryptFile)
+		self.ui.ReadFPGA.clicked.connect(self.readKeyFPGA)
 
 	def setRandomKey(self):
 		self.ui.InputKey.setText(Generate.generateRandomKey())
@@ -131,22 +148,37 @@ class MainWindow(QtWidgets.QMainWindow):
 	def CheckExtension(self,f,ext):
 		if f.lower().endswith(ext):
 			return True
-		self.logMessage("Selected file do not '.aes' file type.")
+		self.logMessage("Selected file is not "+ext+" file type.")
 		return False
+
+	def readKeyFPGA(self):
+		self.logMessage('Reading Key from FPGA ...')
+		ser = Serial('COM3', 9600, timeout=2)
+		time.sleep(1)
+		ser.write(b'm')
+		key = ser.read(100)
+		ser.close()
+		if (len(key)==32 and type(key)==bytes):
+			self.ui.InputKey.setText(key.decode())
+			self.logMessage('Key Reading From FPGA Completed.')
+		else:
+			self.logMessage('Reading Key from FPGA Failed')
 
 	def encryptFile(self):
 		FileToEncrypt = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Image', 'c:\\', 'All Files (*.*)')[0]
 		if FileToEncrypt:
 			if(self.ui.AES_Radio.isChecked()):
-				aes = AES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				aes = AES_Encryptor(self.InputKey.text())
 				aes.encrypt_file(FileToEncrypt)
 			elif (self.ui.BLOWFISH_Radio.isChecked()):
-				bf = Blowfish_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				bf = Blowfish_Encryptor(self.InputKey.text())
 				bf.encrypt_file(FileToEncrypt)
 			elif (self.ui.DES_Radio.isChecked()):
 				pass
-				des = DES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				des = DES_Encryptor(self.InputKey.text())
 				des.encrypt_file(FileToEncrypt)
+			else:
+				self.logMessage('No Method For Encryption Selected.')
 		else:
 			self.logMessage("No File For Encryption Selected.")
 			
@@ -156,17 +188,17 @@ class MainWindow(QtWidgets.QMainWindow):
 			if(self.ui.AES_Radio.isChecked()):
 				if not self.CheckExtension(FileToDecrypt,'.aes'):
 					return
-				aes = AES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
-				aes.decrypt_file(FileToDecrypt[0])
+				aes = AES_Encryptor(self.InputKey.text())
+				aes.decrypt_file(FileToDecrypt)
 			elif (self.ui.BLOWFISH_Radio.isChecked()):
 				if not self.CheckExtension(FileToDecrypt,'.blf'):
 					return
-				bf = Blowfish_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				bf = Blowfish_Encryptor(self.InputKey.text())
 				bf.decrypt_file(FileToDecrypt)
 			elif (self.ui.DES_Radio.isChecked()):
 				if not self.CheckExtension(FileToDecrypt,'.des'):
 					return
-				des = DES_Encryptor(self.InputKey.text(),self.logMessage,self.ui.EncryptedText)
+				des = DES_Encryptor(self.InputKey.text())
 				des.decrypt_file(FileToDecrypt)
 		else:
 			self.logMessage("No File For Decryption Selected.")
@@ -203,7 +235,6 @@ class MainWindow(QtWidgets.QMainWindow):
 			self.logMessage("File Received with name: "+NewFileName)
 		else:
 			self.logMessage("No input to the receive file field.")
-
 ##=====================================================================================================================
 ## Main Function 
 ##=====================================================================================================================

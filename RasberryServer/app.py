@@ -18,7 +18,7 @@ mysql = MySQL()
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = ''
 app.config['MYSQL_DATABASE_DB'] = 'rasberrydb'
-app.config['MYSQL_DATABASE_HOST'] = 'localhost'
+app.config['MYSQL_DATABASE_HOST'] = '10.194.54.153:3306'
 mysql.init_app(app)
 conn = mysql.connect()
 
@@ -51,14 +51,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
 		@app.route('/send_message',methods=['POST'])
 		def message():
-			form = json.loads(request.data)
-			cursor = conn.cursor()
-			print(form)
-			cursor.execute('INSERT INTO clientmessages (Client, Message) VALUES (%(client)s,%(message)s)',form)
-			conn.commit()
-			self.clientMessage('Client: '+form['client']+", Message: "+form['message'])
-			cursor.close()
-			return jsonify({'status':'200'})
+			resp = {'status': 'OK'}
+			try:
+				cursor = conn.cursor()
+				form = json.loads(request.data)
+				print(form)
+				cursor.execute('INSERT INTO clientmessages (Client, Message) VALUES (%(client)s,%(message)s)',form)
+				conn.commit()
+				self.clientMessage('Client: '+form['client']+", Message: "+form['message'])
+			except:
+				self.logMessage("Insertion Into Database Failed.")
+				resp['status'] = 'FAIL'
+			finally:
+				cursor.close()
+			return jsonify(resp)
 
 	def __del__(self):
 		print("Window Closed. Closed All Connections.")

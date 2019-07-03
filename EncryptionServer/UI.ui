@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1328</width>
+    <width>1302</width>
     <height>842</height>
    </rect>
   </property>
@@ -47,7 +47,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>220</y>
+      <y>250</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -105,7 +105,7 @@
     <property name="geometry">
      <rect>
       <x>170</x>
-      <y>360</y>
+      <y>380</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -132,7 +132,7 @@
      <rect>
       <x>30</x>
       <y>130</y>
-      <width>261</width>
+      <width>411</width>
       <height>22</height>
      </rect>
     </property>
@@ -166,7 +166,7 @@
    <widget class="QPushButton" name="GenerateKeyButton">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>300</x>
       <y>170</y>
       <width>121</width>
       <height>28</height>
@@ -203,7 +203,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>460</y>
+      <y>480</y>
       <width>261</width>
       <height>22</height>
      </rect>
@@ -219,7 +219,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>440</y>
+      <y>460</y>
       <width>71</width>
       <height>16</height>
      </rect>
@@ -232,7 +232,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>500</y>
+      <y>520</y>
       <width>93</width>
       <height>28</height>
      </rect>
@@ -255,7 +255,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>220</y>
+      <y>250</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -268,7 +268,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>360</y>
+      <y>380</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -281,7 +281,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>280</y>
+      <y>300</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -291,7 +291,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>280</y>
+      <y>300</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -304,7 +304,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>320</y>
+      <y>340</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -314,7 +314,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>320</y>
+      <y>340</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -453,13 +453,26 @@
      <string>Start</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="ReadFPGA">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>170</y>
+      <width>141</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Read From FPGA</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1328</width>
+     <width>1302</width>
      <height>26</height>
     </rect>
    </property>
