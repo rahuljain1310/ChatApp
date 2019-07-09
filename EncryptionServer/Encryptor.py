@@ -25,6 +25,13 @@ class Generate:
 			for c in info:
 				yield(c)
 
+	@staticmethod
+	def truncateEnd(data):
+		l = len(data)
+		x = data[l-9:l-1]
+		return x+x
+
+
 def PaddKey(key,bs):
 	return key + (' ' * (bs - len(key)%bs)).encode()
 
@@ -87,7 +94,7 @@ class FileCrypto:
 class AES_Encryptor:	
 	def __init__(self, key):
 		self.blockSize = 16
-		self.key = PaddKey(key,self.blockSize)
+		self.key = key.encode()
 	
 	def encrypt_file(self, in_filename,out_filename=None,chunksize=64*1024):
 		iv = Generate.generateByteString(self.blockSize)
@@ -198,9 +205,3 @@ class DES_Encryptor:
 					outfile.write(decryptedText)
 				outfile.truncate(origsize)
 			UIFunctions.log("DES Decryption Completed.")
-
-class ECC_Encryptor:
-	def __init__(self, key):
-		self.key = key.encode()
-		UIFunctions.log("Key is "+str(self.key))
-		self.block_size = 8

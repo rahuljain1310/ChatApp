@@ -153,13 +153,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 	def readKeyFPGA(self):
 		self.logMessage('Reading Key from FPGA ...')
-		ser = Serial('COM3', 9600, timeout=2)
-		time.sleep(1)
-		ser.write(b'm')
+		ser = Serial('COM7', 128000, timeout=2)
+		time.sleep(2)
+		ser.write(b'A')
 		key = ser.read(100)
 		ser.close()
-		if (len(key)==32 and type(key)==bytes):
-			self.ui.InputKey.setText(key.decode())
+		if (type(key)==bytes and len(key)>0):
+			print(key)
+			print(len(key))
+			keytrun = Generate.truncateEnd(key)
+			print(keytrun)
+			print(len(keytrun))
+			self.ui.InputKey.setText(keytrun.decode())
 			self.logMessage('Key Reading From FPGA Completed.')
 		else:
 			self.logMessage('Reading Key from FPGA Failed')
