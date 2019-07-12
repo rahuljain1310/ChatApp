@@ -4,6 +4,7 @@ import os
 import threading
 import random 
 import json
+import rsa, pickle
 from werkzeug.utils import secure_filename
 
 from passlib.hash import pbkdf2_sha256
@@ -20,7 +21,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjk43534nfl1232#'
 app.config['PORT']=5000
 app.config['THREADED']=True
-app.config['DEBUG']=True 
+# app.config['DEBUG']=True 
 
 ##----------------------------------------------------------------------------------------
 
@@ -33,6 +34,8 @@ mysql.init_app(app)
 conn = mysql.connect()
 cursor =conn.cursor()
 socketio = SocketIO(app)
+
+publicKeyDict = {}
 
 ##========================================================================================
 ## Utility Functions
@@ -197,6 +200,24 @@ def ping():
   logRecord("Ping Request By User. Emitting Ping.")
   socketio.emit('ping_by_user', {'message': 'Ping Request By Another User'} ,include_self=False)
 
+@socketio.on('public_key')
+def setPublicKey(data):
+  key = data['key']
+  user = data['user']
+  publicKeyDict[user] = key
+  print(publicKeyDict)
+
+@socketio.on('encryptKey')
+def transferEncryptKey(data):
+  print(data)
+  socketio.emit('RSAencryptedKey',data,broadcast=True)
+
+@socketio.on('sendframe')
+def sendframe(data):
+  # print('received_file')
+  socketio.emit('frame_server',data, broadcast=True ,include_self=False)
+
+
 @socketio.on('send_file_client')
 def sendFileClient():
   pass
@@ -233,8 +254,22 @@ def upload_file():
     return logAndResponse("Not a 'POST' method.")
 
 ##=======================================================================================
+## RSA Public Keys
+##=======================================================================================
+
+@app.route('/publicKey',methods=['GET'])
+def publicKey():
+  user = request.args['user']
+  return jsonify({'key': publicKeyDict[user]})
+
+##=======================================================================================
 ## Main Function
 ##=======================================================================================
+
+
+@app.route('/')
+def index():
+  return 'Please Use Client Application To Use The File ..'
 
 if __name__ == '__main__':    
   socketio.run(app,host='0.0.0.0')

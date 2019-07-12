@@ -1,0 +1,2 @@
+conda install -c conda-forge pyinstaller
+conda install -c anaconda pywin32

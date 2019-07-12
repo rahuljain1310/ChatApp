@@ -26,14 +26,10 @@ class Generate:
 				yield(c)
 
 	@staticmethod
-	def truncateEnd(data):
+	def truncAndConcat(data):
 		l = len(data)
 		x = data[l-9:l-1]
 		return x+x
-
-
-def PaddKey(key,bs):
-	return key + (' ' * (bs - len(key)%bs)).encode()
 
 
 class FileCrypto:

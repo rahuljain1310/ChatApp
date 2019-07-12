@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1302</width>
-    <height>842</height>
+    <width>1283</width>
+    <height>822</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,7 +21,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>40</y>
+      <y>430</y>
       <width>121</width>
       <height>16</height>
      </rect>
@@ -34,7 +34,7 @@
     <property name="geometry">
      <rect>
       <x>60</x>
-      <y>60</y>
+      <y>450</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -47,7 +47,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>250</y>
+      <y>510</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -60,7 +60,7 @@
     <property name="geometry">
      <rect>
       <x>120</x>
-      <y>70</y>
+      <y>460</y>
       <width>51</width>
       <height>20</height>
      </rect>
@@ -79,7 +79,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>70</y>
+      <y>460</y>
       <width>51</width>
       <height>20</height>
      </rect>
@@ -91,8 +91,8 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>570</y>
+      <x>910</x>
+      <y>400</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -105,7 +105,7 @@
     <property name="geometry">
      <rect>
       <x>170</x>
-      <y>380</y>
+      <y>640</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -118,7 +118,7 @@
     <property name="geometry">
      <rect>
       <x>210</x>
-      <y>70</y>
+      <y>460</y>
       <width>95</width>
       <height>20</height>
      </rect>
@@ -131,8 +131,8 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>130</y>
-      <width>411</width>
+      <y>220</y>
+      <width>391</width>
       <height>22</height>
      </rect>
     </property>
@@ -140,7 +140,7 @@
    <widget class="QLabel" name="label_4">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>40</y>
       <width>121</width>
       <height>16</height>
@@ -154,7 +154,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>110</y>
+      <y>200</y>
       <width>55</width>
       <height>16</height>
      </rect>
@@ -166,20 +166,20 @@
    <widget class="QPushButton" name="GenerateKeyButton">
     <property name="geometry">
      <rect>
-      <x>300</x>
-      <y>170</y>
-      <width>121</width>
+      <x>240</x>
+      <y>260</y>
+      <width>181</width>
       <height>28</height>
      </rect>
     </property>
     <property name="text">
-     <string>Generate Key</string>
+     <string>Generate Software Key</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>920</x>
+      <x>910</x>
       <y>40</y>
       <width>101</width>
       <height>16</height>
@@ -192,10 +192,10 @@
    <widget class="QTextBrowser" name="EncryptedText">
     <property name="geometry">
      <rect>
-      <x>920</x>
+      <x>910</x>
       <y>70</y>
       <width>371</width>
-      <height>721</height>
+      <height>301</height>
      </rect>
     </property>
    </widget>
@@ -203,9 +203,9 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>480</y>
+      <y>740</y>
       <width>261</width>
-      <height>22</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="readOnly">
@@ -219,7 +219,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>460</y>
+      <y>710</y>
       <width>71</width>
       <height>16</height>
      </rect>
@@ -231,10 +231,10 @@
    <widget class="QPushButton" name="PingButton">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>520</y>
+      <x>310</x>
+      <y>740</y>
       <width>93</width>
-      <height>28</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -244,10 +244,10 @@
    <widget class="QTextEdit" name="LogsView">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>600</y>
-      <width>391</width>
-      <height>191</height>
+      <x>910</x>
+      <y>430</y>
+      <width>371</width>
+      <height>361</height>
      </rect>
     </property>
    </widget>
@@ -255,7 +255,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>250</y>
+      <y>510</y>
       <width>111</width>
       <height>28</height>
      </rect>
@@ -268,7 +268,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>380</y>
+      <y>640</y>
       <width>121</width>
       <height>28</height>
      </rect>
@@ -281,7 +281,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>300</y>
+      <y>560</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -291,7 +291,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>300</y>
+      <y>560</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -304,7 +304,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>340</y>
+      <y>600</y>
       <width>251</width>
       <height>22</height>
      </rect>
@@ -314,7 +314,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>340</y>
+      <y>600</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -326,7 +326,7 @@
    <widget class="QLabel" name="LocalVideoStream">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>70</y>
       <width>411</width>
       <height>321</height>
@@ -345,7 +345,7 @@
    <widget class="QTextBrowser" name="EncryptedFrame">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>560</y>
       <width>411</width>
       <height>231</height>
@@ -355,7 +355,7 @@
    <widget class="QLabel" name="label_11">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>530</y>
       <width>111</width>
       <height>16</height>
@@ -368,7 +368,7 @@
    <widget class="QPushButton" name="CallUserButton">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>470</y>
       <width>93</width>
       <height>28</height>
@@ -381,7 +381,7 @@
    <widget class="QLineEdit" name="lineEdit_2">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>430</y>
       <width>331</width>
       <height>22</height>
@@ -391,7 +391,7 @@
    <widget class="QLabel" name="label_12">
     <property name="geometry">
      <rect>
-      <x>450</x>
+      <x>470</x>
       <y>410</y>
       <width>81</width>
       <height>16</height>
@@ -404,7 +404,7 @@
    <widget class="QPushButton" name="HangUpButton">
     <property name="geometry">
      <rect>
-      <x>570</x>
+      <x>590</x>
       <y>470</y>
       <width>93</width>
       <height>28</height>
@@ -417,7 +417,7 @@
    <widget class="QPushButton" name="AnswerCallButton">
     <property name="geometry">
      <rect>
-      <x>690</x>
+      <x>710</x>
       <y>470</y>
       <width>93</width>
       <height>28</height>
@@ -430,7 +430,7 @@
    <widget class="QPushButton" name="StopLocalStream">
     <property name="geometry">
      <rect>
-      <x>782</x>
+      <x>802</x>
       <y>30</y>
       <width>81</width>
       <height>28</height>
@@ -440,10 +440,10 @@
      <string>Stop</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="StopLocalStream_2">
+   <widget class="QPushButton" name="StartLocalStream">
     <property name="geometry">
      <rect>
-      <x>680</x>
+      <x>700</x>
       <y>30</y>
       <width>81</width>
       <height>28</height>
@@ -457,13 +457,154 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>170</y>
-      <width>141</width>
+      <y>260</y>
+      <width>191</width>
       <height>28</height>
      </rect>
     </property>
     <property name="text">
-     <string>Read From FPGA</string>
+     <string>Read From External Hardware</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="PortsCombo">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>70</y>
+      <width>101</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="HardWareStatus">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>160</y>
+      <width>231</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Hardware Connection Status ...</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_13">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>40</y>
+      <width>251</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Hardware Communication Settings</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="BaudRateCombo">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>100</y>
+      <width>101</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>4</number>
+    </property>
+    <item>
+     <property name="text">
+      <string>9600</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>19200</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>38400</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>57600</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>115200</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>128000</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLabel" name="label_14">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>70</y>
+      <width>55</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Port</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_15">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>100</y>
+      <width>55</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>BaudRate</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="SendKeyButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>360</y>
+      <width>201</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Send Key Through RSA</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="KeySendUser">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>330</y>
+      <width>113</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>330</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>User Name</string>
     </property>
    </widget>
   </widget>
@@ -472,7 +613,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1302</width>
+     <width>1283</width>
      <height>26</height>
     </rect>
    </property>

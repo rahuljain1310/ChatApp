@@ -1,12 +1,22 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from Encryptor import AES_Encryptor, Generate, Blowfish_Encryptor, DES_Encryptor, UIFunctions
-import sys,random,cv2,os,requests
-import socketio
 import json
+import os
+import random
+import sys
 import threading
-from serial import Serial
 import time
+import pickle
+import base64
+import numpy
 
+import cv2
+import requests
+import socketio
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from serial import Serial
+
+import rsa
+from Encryptor import (AES_Encryptor, Blowfish_Encryptor, DES_Encryptor, Generate, UIFunctions)
+from SerialComm import get_serial_ports
 
 ##=====================================================================================================================
 ## Initializations 
@@ -16,7 +26,7 @@ class UserDetails():
 	Username = 'Username'
 	UserID = -1
 	UserState = 'Logged_Off'
-	EnableLocalStreaming = True
+	EnableLocalStreaming = False
 
 	@staticmethod
 	def getUsername():
@@ -33,29 +43,67 @@ class UserDetails():
 class FPGADetails():
 	BaudRate = 9600
 	PORT = 'COM3'
+
+class RSACommunication():
+	PrivateKey = None
+	PublicKey = None
+	
+	@staticmethod
+	def generatePairs():
+		(pubkey, privkey) = rsa.newkeys(512)
+		RSACommunication.PrivateKey = privkey
+		RSACommunication.PublicKey = pubkey
+
+	@staticmethod
+	def encrypt_message(message,user):
+		rsa_public_key = RSACommunication.getUserPublicKey(user)
+		message_bytes = message.encode('utf-8')
+		encrypted_message = rsa.encrypt(message_bytes, rsa_public_key)
+		return encrypted_message
+
+	@staticmethod
+	def decrypt_message(message_bytes):
+		return rsa.decrypt(message_bytes, RSACommunication.PrivateKey)
+
+	@staticmethod
+	def getUserPublicKey(user):
+		UIFunctions.log("Fetching Public Key For User: "+ user)
+		URL = "http://localhost:5000/publicKey"
+		r = requests.get(url = URL, params = {'user': user} ) 
+		x = json.loads(r.content)
+		bytes_key = x['key'].encode()
+		publicKey = pickle.loads(bytes_key)
+		UIFunctions.log('Public Key Received For User: '+user)
+		return publicKey
+
 ##=====================================================================================================================
 ## Local Stream Thread 
 ##=====================================================================================================================
 
 class LocalStream(threading.Thread):
-	def __init__(self, camID, videoframe, encBox):
+	def __init__(self, camID, videoframe, encBox, socket):
 		threading.Thread.__init__(self)
 		self.camID = camID
 		self.videoFrame = videoframe
 		self.encryptBox = encBox
+		# self.socket = socketio.Client()
+		self.socket = socket
+	
 	def run(self):
-		print("Starting Local Stream")
+		UIFunctions.log("Starting Local Stream")
 		camera=cv2.VideoCapture(self.camID)
-		while True:
+		while UserDetails.EnableLocalStreaming:
 			retval,im = camera.read()
 			imgencode = cv2.imencode('.jpg',im)[1]
-			stringData=imgencode.tostring()
-			# self.encryptBox.setText(str(stringData))
+			self.socket.emit('sendframe',{'frame': imgencode.tolist(),'user': UserDetails.Username})
+			# stringData=imgencode.tostring()
 			pixmap = QtGui.QPixmap()
 			pixmap.loadFromData(imgencode,'JPG')
 			self.videoFrame.setPixmap(pixmap)
 			if not UserDetails.EnableLocalStreaming:
 				break
+		UIFunctions.log('Stream Stopped.')		
+		# self.socket.disconnect()
 		return
 
 ##=====================================================================================================================
@@ -83,15 +131,6 @@ class Login(QtWidgets.QDialog):
 		else:
 			QtWidgets.QMessageBox.warning(self, 'Error', 'Incorrect Username or Password.')
 
-# class FPGAKey(QtWidgets.QDialog):
-# 	def __init__(self, parent=None):
-# 		super(FPGAKey, self).__init__(parent)
-# 		self.fui = uic.loadUi(']FPGAKey.ui', self)
-# 		self.fui.buttonBox.OK.clicked.connect(self.handleOK)
-
-# 	def handleOK(self):
-# 		self.accept()
-
 ##=====================================================================================================================
 ## MainWindow 
 ##=====================================================================================================================
@@ -101,10 +140,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		super(MainWindow, self).__init__(parent)
 		self.ui = uic.loadUi('UI.ui', self)
 		self.socket = socket
-		self.setupSignal()
-		# self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame)
-		# self.localStream.start()
-
+	
 		@socket.on('connect')
 		def on_connect():
 			self.logMessage('connection established')
@@ -118,7 +154,32 @@ class MainWindow(QtWidgets.QMainWindow):
 			print(json['message'])
 			self.logMessage("Pinged By Another User.")
 
+		@socket.on('frame_server')
+		def set_frame(data):
+			if UserDetails.EnableLocalStreaming == True:
+				return
+			if(data['user']==UserDetails.Username):
+				imgencode =  numpy.array(data['frame'])
+				pixmap = QtGui.QPixmap()
+				pixmap.loadFromData(imgencode,'JPG')
+				self.ui.LocalVideoStream.setPixmap(pixmap)
+
+		@socket.on('RSAencryptedKey')
+		def RSAEcnryptedKey(data):
+			print(data)
+			if(data['user']==UserDetails.getUsername()):
+				self.logMessage('Received Json From User: '+data['from'])
+				keyEncoded = bytes.fromhex(data['key'])
+				decryptedKey = RSACommunication.decrypt_message(keyEncoded)
+				self.ui.InputKey.setText(decryptedKey.decode())
+				self.logMessage('Received Encryption Key From User: '+data['from'])
+
 		socket.connect('http://localhost:5000')
+
+		self.setupSignal()
+		# self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame)
+		# self.localStream.start()
+
 
 	def __del__(self):
 		print("Window Closed. Closed All Connections.")
@@ -126,10 +187,32 @@ class MainWindow(QtWidgets.QMainWindow):
 	def setupSignal(self):
 		self.setRandomKey()
 		self.setUserName(UserDetails.getUsername())
+
+		## Set Up RSA And Send Public Key To Server
+		RSACommunication.generatePairs()
+		key = pickle.dumps(RSACommunication.PublicKey,0)
+		keyuser = {'key': key.decode(), 'user': UserDetails.Username}
+		# self.logMessage(str(keyuser))
+		self.logMessage('Public Key Generated And Send To The Server.')
+		self.socket.emit('public_key',keyuser)
+
+		## Global Gui Widgets
 		UIFunctions.log = self.logMessage
 		UIFunctions.encryptTextBox = self.ui.EncryptedText
 
+		## Set COM Ports for Connection
+		ports = get_serial_ports()
+		for port in ports:
+			self.ui.PortsCombo.addItem(port)
+		if len(ports)==0:
+			self.ui.PortsCombo.addItem('None')
+		
 		## Connect
+		#-- drop downs
+		self.ui.PortsCombo.activated[str].connect(self.setPort)
+		self.ui.BaudRateCombo.activated[str].connect(self.setBaudRate)
+		#-- clicks
+		self.ui.SendKeyButton.clicked.connect(self.sendKeyThroughRSA)
 		self.ui.GenerateKeyButton.clicked.connect(self.setRandomKey)
 		self.ui.EncryptFileButton.clicked.connect(self.encryptFile)
 		self.ui.SendFileButton.clicked.connect(self.sendFile)
@@ -137,13 +220,49 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.ReceiveFileButton.clicked.connect(self.receiveFile)
 		self.ui.DecryptFileButton.clicked.connect(self.decryptFile)
 		self.ui.ReadFPGA.clicked.connect(self.readKeyFPGA)
+		self.ui.StopLocalStream.clicked.connect(self.stopstream)
+		self.ui.StartLocalStream.clicked.connect(self.startstream)
+
+	def stopstream(self):
+		self.logMessage('Attempting End Call ...')
+		UserDetails.EnableLocalStreaming = False
+		print(UserDetails.EnableLocalStreaming)
+
+	def startstream(self):
+		self.logMessage('Attempting Start Call ...')
+		UserDetails.EnableLocalStreaming = True
+		self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame, self.socket)
+		self.localStream.start()
+
+	def sendKeyThroughRSA(self):
+		key = self.ui.InputKey.text()
+		user = self.ui.KeySendUser.text()
+		if user == '' or key == '':
+			self.logMessage('User or Key is Empty or not defined.')
+			return
+		bytestring = RSACommunication.encrypt_message(key,user)
+		data = {'key': bytestring.hex(), 'user': user, 'from': UserDetails.getUsername()}
+		self.socket.emit('encryptKey',data)
+		self.logMessage('Key Sent To The User.') 
 
 	def setRandomKey(self):
 		self.ui.InputKey.setText(Generate.generateRandomKey())
-	
+
 	def logMessage(self,message):
 		self.ui.LogsView.append(message)
 		print(message)
+
+	def setPort(self,port):
+		FPGADetails.PORT = port
+		self.logMessage('Serial Port Changed To '+FPGADetails.PORT)
+
+	def setBaudRate(self,bdr):
+		FPGADetails.BaudRate = bdr
+		self.logMessage('Baud Rate Changed To '+FPGADetails.BaudRate)
+
+	def showConnectivityStatus(self):
+		pass 
+		## Show in label if connection is made or not
 
 	def CheckExtension(self,f,ext):
 		if f.lower().endswith(ext):
@@ -153,7 +272,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 	def readKeyFPGA(self):
 		self.logMessage('Reading Key from FPGA ...')
-		ser = Serial('COM7', 128000, timeout=2)
+		ser = Serial(FPGADetails.PORT, FPGADetails.BaudRate, timeout=2)
 		time.sleep(2)
 		ser.write(b'A')
 		key = ser.read(100)
@@ -161,7 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		if (type(key)==bytes and len(key)>0):
 			print(key)
 			print(len(key))
-			keytrun = Generate.truncateEnd(key)
+			keytrun = Generate.truncAndConcat(key)
 			print(keytrun)
 			print(len(keytrun))
 			self.ui.InputKey.setText(keytrun.decode())
@@ -221,7 +340,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.socket.emit('ping')
 
 	def sendFile(self):
-		FileToSend = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Image', 'c:\\', 'Image files (*.jpg,*.gif, *.jpeg)')
+		FileToSend = QtWidgets.QFileDialog.getOpenFileName(None, 'Send File', 'c:\\', 'All files (*.*)')
 		if(FileToSend[0]):
 			with open(FileToSend[0], 'rb') as f:
 				r = requests.post('http://localhost:5000/upload', files={'file': f})
@@ -231,6 +350,8 @@ class MainWindow(QtWidgets.QMainWindow):
 	def receiveFile(self):
 		FileToReceive = self.ui.FileInput.text()
 		NewFileName = self.ui.NewFileInput.text()
+		if NewFileName == '':
+			NewFileName = FileToReceive
 		self.logMessage("Receiving File: "+FileToReceive)
 		if(FileToReceive):
 			with open(NewFileName, 'wb') as f:
@@ -240,6 +361,7 @@ class MainWindow(QtWidgets.QMainWindow):
 			self.logMessage("File Received with name: "+NewFileName)
 		else:
 			self.logMessage("No input to the receive file field.")
+
 ##=====================================================================================================================
 ## Main Function 
 ##=====================================================================================================================
