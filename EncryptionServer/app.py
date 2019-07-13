@@ -205,7 +205,7 @@ def setPublicKey(data):
   key = data['key']
   user = data['user']
   publicKeyDict[user] = key
-  print(publicKeyDict)
+  # print(publicKeyDict)
 
 @socketio.on('encryptKey')
 def transferEncryptKey(data):
@@ -214,8 +214,8 @@ def transferEncryptKey(data):
 
 @socketio.on('sendframe')
 def sendframe(data):
-  # print('received_file')
-  socketio.emit('frame_server',data, broadcast=True ,include_self=False)
+  # print('rec_frame')
+  socketio.emit('frame_server',data)
 
 
 @socketio.on('send_file_client')

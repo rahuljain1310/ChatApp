@@ -13,6 +13,7 @@ import requests
 import socketio
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from serial import Serial
+from Crypto.Cipher import AES, Blowfish
 
 import rsa
 from Encryptor import (AES_Encryptor, Blowfish_Encryptor, DES_Encryptor, Generate, UIFunctions)
@@ -27,6 +28,7 @@ class UserDetails():
 	UserID = -1
 	UserState = 'Logged_Off'
 	EnableLocalStreaming = False
+	EnableRemoteStreaming = False
 
 	@staticmethod
 	def getUsername():
@@ -86,7 +88,6 @@ class LocalStream(threading.Thread):
 		self.camID = camID
 		self.videoFrame = videoframe
 		self.encryptBox = encBox
-		# self.socket = socketio.Client()
 		self.socket = socket
 	
 	def run(self):
@@ -95,15 +96,15 @@ class LocalStream(threading.Thread):
 		while UserDetails.EnableLocalStreaming:
 			retval,im = camera.read()
 			imgencode = cv2.imencode('.jpg',im)[1]
-			self.socket.emit('sendframe',{'frame': imgencode.tolist(),'user': UserDetails.Username})
+			# self.socket.emit('sendframe',{'frame': imgencode.tolist(),'user': UserDetails.Username})
 			# stringData=imgencode.tostring()
 			pixmap = QtGui.QPixmap()
 			pixmap.loadFromData(imgencode,'JPG')
 			self.videoFrame.setPixmap(pixmap)
 			if not UserDetails.EnableLocalStreaming:
 				break
+		camera.release()
 		UIFunctions.log('Stream Stopped.')		
-		# self.socket.disconnect()
 		return
 
 ##=====================================================================================================================
@@ -140,6 +141,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		super(MainWindow, self).__init__(parent)
 		self.ui = uic.loadUi('UI.ui', self)
 		self.socket = socket
+		self.camera = None
 	
 		@socket.on('connect')
 		def on_connect():
@@ -156,14 +158,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
 		@socket.on('frame_server')
 		def set_frame(data):
-			if UserDetails.EnableLocalStreaming == True:
-				return
-			if(data['user']==UserDetails.Username):
-				imgencode =  numpy.array(data['frame'])
-				pixmap = QtGui.QPixmap()
-				pixmap.loadFromData(imgencode,'JPG')
-				self.ui.LocalVideoStream.setPixmap(pixmap)
-
+			# print('received_frame')
+			encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
+			encodeframe = encrpt.decrypt(data['frame'])
+			encodeframe = encodeframe[0:data['length']]
+			pixmap = QtGui.QPixmap()
+			pixmap.loadFromData(encodeframe,'JPG')
+			self.ui.LocalVideoStream.setPixmap(pixmap)
+			if UserDetails.EnableRemoteStreaming == True:
+				_,im = self.camera.read()
+				imgencode = cv2.imencode('.jpg',im)[1].tostring()
+				origsize = len(imgencode)
+				encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
+				imgencode += (' '*(16-origsize%16)).encode()
+				encodeframe = encrpt.encrypt(imgencode)
+				self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
+				
 		@socket.on('RSAencryptedKey')
 		def RSAEcnryptedKey(data):
 			print(data)
@@ -177,9 +187,6 @@ class MainWindow(QtWidgets.QMainWindow):
 		socket.connect('http://localhost:5000')
 
 		self.setupSignal()
-		# self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame)
-		# self.localStream.start()
-
 
 	def __del__(self):
 		print("Window Closed. Closed All Connections.")
@@ -212,6 +219,8 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.PortsCombo.activated[str].connect(self.setPort)
 		self.ui.BaudRateCombo.activated[str].connect(self.setBaudRate)
 		#-- clicks
+		self.ui.SendStream.clicked.connect(self.startSendFrame)
+		self.ui.EndStream.clicked.connect(self.stopSendFrame)
 		self.ui.SendKeyButton.clicked.connect(self.sendKeyThroughRSA)
 		self.ui.GenerateKeyButton.clicked.connect(self.setRandomKey)
 		self.ui.EncryptFileButton.clicked.connect(self.encryptFile)
@@ -220,15 +229,33 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.ReceiveFileButton.clicked.connect(self.receiveFile)
 		self.ui.DecryptFileButton.clicked.connect(self.decryptFile)
 		self.ui.ReadFPGA.clicked.connect(self.readKeyFPGA)
-		self.ui.StopLocalStream.clicked.connect(self.stopstream)
-		self.ui.StartLocalStream.clicked.connect(self.startstream)
+		self.ui.StopLocalStream.clicked.connect(self.stopLocalStream)
+		self.ui.StartLocalStream.clicked.connect(self.startLocalStream)
 
-	def stopstream(self):
+	def startSendFrame(self):
+		UserDetails.EnableLocalStreaming = False
+		UserDetails.EnableRemoteStreaming = True
+		self.camera = cv2.VideoCapture(0)
+		self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+		self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+		_,im = self.camera.read()
+		imgencode = cv2.imencode('.jpg',im)[1].tostring()
+		origsize = len(imgencode)
+		imgencode += (' '*(16-origsize%16)).encode()
+		encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
+		encodeframe = encrpt.encrypt(imgencode)
+		self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
+		
+	def stopSendFrame(self):
+		UserDetails.EnableRemoteStreaming = False
+		self.camera.release()
+
+	def stopLocalStream(self):
 		self.logMessage('Attempting End Call ...')
 		UserDetails.EnableLocalStreaming = False
 		print(UserDetails.EnableLocalStreaming)
 
-	def startstream(self):
+	def startLocalStream(self):
 		self.logMessage('Attempting Start Call ...')
 		UserDetails.EnableLocalStreaming = True
 		self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame, self.socket)
@@ -286,6 +313,7 @@ class MainWindow(QtWidgets.QMainWindow):
 			self.ui.InputKey.setText(keytrun.decode())
 			self.logMessage('Key Reading From FPGA Completed.')
 		else:
+			print(key)
 			self.logMessage('Reading Key from FPGA Failed')
 
 	def encryptFile(self):
