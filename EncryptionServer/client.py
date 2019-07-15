@@ -17,7 +17,7 @@ from Crypto.Cipher import AES, Blowfish
 
 import rsa
 from Encryptor import (AES_Encryptor, Blowfish_Encryptor, DES_Encryptor, Generate, UIFunctions)
-from SerialComm import get_serial_ports
+from SerialComm import get_serial_ports, check_serial_status
 
 ##=====================================================================================================================
 ## Initializations 
@@ -27,6 +27,7 @@ class UserDetails():
 	Username = 'Username'
 	UserID = -1
 	UserState = 'Logged_Off'
+	hostname = 'localhost'
 	EnableLocalStreaming = False
 	EnableRemoteStreaming = False
 
@@ -43,8 +44,27 @@ class UserDetails():
 		return UserDetails.UserState
 	
 class FPGADetails():
-	BaudRate = 9600
-	PORT = 'COM3'
+	BaudRate = 128000
+	PORT = 'None'
+
+	@staticmethod
+	def checkFPGAStatus(hardwareStatus, PortsCombo):
+		threading.Timer(15.0, FPGADetails.checkFPGAStatus, [hardwareStatus, PortsCombo]).start()
+		if (check_serial_status(FPGADetails.PORT)):
+			hardwareStatus.setText('Hardware Connected.')
+		else:
+			hardwareStatus.setText('Hardware Disconnected.')
+			PortsCombo.clear()
+			ports = get_serial_ports()
+			for port in ports:
+				PortsCombo.addItem(port)
+			if len(ports)==0:
+				PortsCombo.addItem('None')
+			else:
+				if FPGADetails.PORT not in ports:
+					FPGADetails.PORT = ports[0]
+					hardwareStatus.setText('Hardware Connected')
+					UIFunctions.log('Serial Port Changed To '+port)	
 
 class RSACommunication():
 	PrivateKey = None
@@ -70,7 +90,7 @@ class RSACommunication():
 	@staticmethod
 	def getUserPublicKey(user):
 		UIFunctions.log("Fetching Public Key For User: "+ user)
-		URL = "http://localhost:5000/publicKey"
+		URL = "http://"+UserDetails.hostname+":5000/publicKey"
 		r = requests.get(url = URL, params = {'user': user} ) 
 		x = json.loads(r.content)
 		bytes_key = x['key'].encode()
@@ -83,11 +103,10 @@ class RSACommunication():
 ##=====================================================================================================================
 
 class LocalStream(threading.Thread):
-	def __init__(self, camID, videoframe, encBox, socket):
+	def __init__(self, camID, videoframe, socket):
 		threading.Thread.__init__(self)
 		self.camID = camID
 		self.videoFrame = videoframe
-		self.encryptBox = encBox
 		self.socket = socket
 	
 	def run(self):
@@ -123,7 +142,9 @@ class Login(QtWidgets.QDialog):
 			'username': self.lui.UsernameInput.text(),
 			'password': self.lui.PasswordInput.text(),
 		}
-		r = requests.post('http://localhost:5000/login_user_exe',json=form)
+		UserDetails.hostname = self.lui.hostname.text()
+		print(UserDetails.hostname)
+		r = requests.post('http://'+UserDetails.hostname+':5000/login_user_exe',json=form)
 		result = json.loads(r.content)
 		if(result['code']==200):
 			UserDetails.Username = form['username']
@@ -158,7 +179,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 		@socket.on('frame_server')
 		def set_frame(data):
-			# print('received_frame')
 			encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
 			encodeframe = encrpt.decrypt(data['frame'])
 			encodeframe = encodeframe[0:data['length']]
@@ -166,13 +186,17 @@ class MainWindow(QtWidgets.QMainWindow):
 			pixmap.loadFromData(encodeframe,'JPG')
 			self.ui.LocalVideoStream.setPixmap(pixmap)
 			if UserDetails.EnableRemoteStreaming == True:
-				_,im = self.camera.read()
-				imgencode = cv2.imencode('.jpg',im)[1].tostring()
-				origsize = len(imgencode)
-				encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
-				imgencode += (' '*(16-origsize%16)).encode()
-				encodeframe = encrpt.encrypt(imgencode)
-				self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
+				try:
+					_,im = self.camera.read()
+					imgencode = cv2.imencode('.jpg',im)[1].tostring()
+					origsize = len(imgencode)
+					encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
+					imgencode += (' '*(16-origsize%16)).encode()
+					encodeframe = encrpt.encrypt(imgencode)
+					self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
+				except:
+					pass					
+					
 				
 		@socket.on('RSAencryptedKey')
 		def RSAEcnryptedKey(data):
@@ -184,7 +208,8 @@ class MainWindow(QtWidgets.QMainWindow):
 				self.ui.InputKey.setText(decryptedKey.decode())
 				self.logMessage('Received Encryption Key From User: '+data['from'])
 
-		socket.connect('http://localhost:5000')
+		print(UserDetails.hostname)
+		socket.connect('http://'+UserDetails.hostname+':5000')
 
 		self.setupSignal()
 
@@ -199,7 +224,6 @@ class MainWindow(QtWidgets.QMainWindow):
 		RSACommunication.generatePairs()
 		key = pickle.dumps(RSACommunication.PublicKey,0)
 		keyuser = {'key': key.decode(), 'user': UserDetails.Username}
-		# self.logMessage(str(keyuser))
 		self.logMessage('Public Key Generated And Send To The Server.')
 		self.socket.emit('public_key',keyuser)
 
@@ -207,12 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		UIFunctions.log = self.logMessage
 		UIFunctions.encryptTextBox = self.ui.EncryptedText
 
-		## Set COM Ports for Connection
-		ports = get_serial_ports()
-		for port in ports:
-			self.ui.PortsCombo.addItem(port)
-		if len(ports)==0:
-			self.ui.PortsCombo.addItem('None')
+		FPGADetails.checkFPGAStatus(self.ui.HardWareStatus, self.ui.PortsCombo)
 		
 		## Connect
 		#-- drop downs
@@ -236,15 +255,22 @@ class MainWindow(QtWidgets.QMainWindow):
 		UserDetails.EnableLocalStreaming = False
 		UserDetails.EnableRemoteStreaming = True
 		self.camera = cv2.VideoCapture(0)
+		self.logMessage('')
 		self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
 		self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
-		_,im = self.camera.read()
-		imgencode = cv2.imencode('.jpg',im)[1].tostring()
-		origsize = len(imgencode)
-		imgencode += (' '*(16-origsize%16)).encode()
-		encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
-		encodeframe = encrpt.encrypt(imgencode)
-		self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
+		try:
+			_,im = self.camera.read()
+			imgencode = cv2.imencode('.jpg',im)[1].tostring()
+			origsize = len(imgencode)
+			imgencode += (' '*(16-origsize%16)).encode()
+			encrpt = AES.new(self.ui.InputKey.text().encode(),AES.MODE_ECB)
+			encodeframe = encrpt.encrypt(imgencode)
+			try:
+				self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
+			except:
+				self.logMessage('Sending Frame failed')
+		except:
+			self.logMessage("Camera Read failed.")
 		
 	def stopSendFrame(self):
 		UserDetails.EnableRemoteStreaming = False
@@ -258,7 +284,7 @@ class MainWindow(QtWidgets.QMainWindow):
 	def startLocalStream(self):
 		self.logMessage('Attempting Start Call ...')
 		UserDetails.EnableLocalStreaming = True
-		self.localStream = LocalStream(0,self.ui.LocalVideoStream,self.ui.EncryptedFrame, self.socket)
+		self.localStream = LocalStream(0,self.ui.LocalVideoStream, self.socket)
 		self.localStream.start()
 
 	def sendKeyThroughRSA(self):
@@ -299,6 +325,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 	def readKeyFPGA(self):
 		self.logMessage('Reading Key from FPGA ...')
+		if FPGADetails.PORT == None or FPGADetails.PORT == 'None':
+			self.logMessage('Port Not Selected')
+			return
 		ser = Serial(FPGADetails.PORT, FPGADetails.BaudRate, timeout=2)
 		time.sleep(2)
 		ser.write(b'A')
@@ -371,7 +400,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		FileToSend = QtWidgets.QFileDialog.getOpenFileName(None, 'Send File', 'c:\\', 'All files (*.*)')
 		if(FileToSend[0]):
 			with open(FileToSend[0], 'rb') as f:
-				r = requests.post('http://localhost:5000/upload', files={'file': f})
+				r = requests.post('http://'+UserDetails.hostname+':5000/upload', files={'file': f})
 				self.logMessage(r.text)
 				self.socket.emit('offer_file',{'type':'file_send','filename':FileToSend[0]})
 
@@ -383,7 +412,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.logMessage("Receiving File: "+FileToReceive)
 		if(FileToReceive):
 			with open(NewFileName, 'wb') as f:
-				r = requests.get('http://localhost:5000/download/'+FileToReceive)
+				r = requests.get('http://'+UserDetails.hostname+':5000/download/'+FileToReceive)
 				f.write(r.content)
 				f.close()
 			self.logMessage("File Received with name: "+NewFileName)
@@ -406,4 +435,3 @@ if __name__ == "__main__":
 		sio.disconnect()
 		UserDetails.EnableLocalStreaming = False
 		sys.exit()
-		# sys.exit(app.exec_())

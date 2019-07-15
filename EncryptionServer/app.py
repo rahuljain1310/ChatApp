@@ -214,7 +214,7 @@ def transferEncryptKey(data):
 
 @socketio.on('sendframe')
 def sendframe(data):
-  # print('rec_frame')
+  print('rec_frame')
   socketio.emit('frame_server',data)
 
 

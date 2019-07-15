@@ -20,3 +20,13 @@ def get_serial_ports():
     except (OSError, serial.SerialException):
       pass
   return result
+
+def check_serial_status(port):
+  if port == None or port == 'None':
+    return False
+  try:
+    s = serial.Serial(port)
+    s.close()
+    return True
+  except:
+    return False
