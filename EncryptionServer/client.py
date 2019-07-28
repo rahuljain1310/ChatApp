@@ -7,6 +7,7 @@ import time
 import pickle
 import base64
 import numpy
+import struct
 
 import cv2
 import requests
@@ -16,7 +17,7 @@ from serial import Serial
 from Crypto.Cipher import AES, Blowfish
 
 import rsa
-from Encryptor import (AES_Encryptor, Blowfish_Encryptor, DES_Encryptor, Generate, UIFunctions)
+from Encryptor import (AES_Encryptor, Blowfish_Encryptor, DES_Encryptor, Generate, UIFunctions, XORKey, UserKeyStore)
 from SerialComm import get_serial_ports, check_serial_status
 
 ##=====================================================================================================================
@@ -115,8 +116,6 @@ class LocalStream(threading.Thread):
 		while UserDetails.EnableLocalStreaming:
 			retval,im = camera.read()
 			imgencode = cv2.imencode('.jpg',im)[1]
-			# self.socket.emit('sendframe',{'frame': imgencode.tolist(),'user': UserDetails.Username})
-			# stringData=imgencode.tostring()
 			pixmap = QtGui.QPixmap()
 			pixmap.loadFromData(imgencode,'JPG')
 			self.videoFrame.setPixmap(pixmap)
@@ -162,6 +161,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		super(MainWindow, self).__init__(parent)
 		self.ui = uic.loadUi('UI.ui', self)
 		self.socket = socket
+		self.userKey = None
 		self.camera = None
 	
 		@socket.on('connect')
@@ -196,8 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
 					self.socket.emit('sendframe',{'frame': encodeframe,'length': origsize})
 				except:
 					pass					
-					
-				
+						
 		@socket.on('RSAencryptedKey')
 		def RSAEcnryptedKey(data):
 			print(data)
@@ -208,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
 				self.ui.InputKey.setText(decryptedKey.decode())
 				self.logMessage('Received Encryption Key From User: '+data['from'])
 
-		print(UserDetails.hostname)
+		print("Connected To Host "+ UserDetails.hostname)
 		socket.connect('http://'+UserDetails.hostname+':5000')
 
 		self.setupSignal()
@@ -238,6 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.PortsCombo.activated[str].connect(self.setPort)
 		self.ui.BaudRateCombo.activated[str].connect(self.setBaudRate)
 		#-- clicks
+		self.ui.ReadUserKey.clicked.connect(self.readUserKey)
 		self.ui.SendStream.clicked.connect(self.startSendFrame)
 		self.ui.EndStream.clicked.connect(self.stopSendFrame)
 		self.ui.SendKeyButton.clicked.connect(self.sendKeyThroughRSA)
@@ -251,6 +251,10 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.ui.StopLocalStream.clicked.connect(self.stopLocalStream)
 		self.ui.StartLocalStream.clicked.connect(self.startLocalStream)
 
+	def readUserKey(self):
+		KeyFile = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Image', 'c:\\', 'All Files (*.*)')[0]
+		self.userKey = UserKeyStore(KeyFile)
+					
 	def startSendFrame(self):
 		UserDetails.EnableLocalStreaming = False
 		UserDetails.EnableRemoteStreaming = True
@@ -346,17 +350,20 @@ class MainWindow(QtWidgets.QMainWindow):
 			self.logMessage('Reading Key from FPGA Failed')
 
 	def encryptFile(self):
+		if self.userKey == None:
+			self.logMessage('No User Key Loaded.')
+			return
 		FileToEncrypt = QtWidgets.QFileDialog.getOpenFileName(None, 'Open Image', 'c:\\', 'All Files (*.*)')[0]
 		if FileToEncrypt:
+			keyGenerated = self.InputKey.text().encode()
 			if(self.ui.AES_Radio.isChecked()):
-				aes = AES_Encryptor(self.InputKey.text())
+				aes = AES_Encryptor(keyGenerated, self.userKey)
 				aes.encrypt_file(FileToEncrypt)
 			elif (self.ui.BLOWFISH_Radio.isChecked()):
-				bf = Blowfish_Encryptor(self.InputKey.text())
+				bf = Blowfish_Encryptor(keyGenerated,self.userKey)
 				bf.encrypt_file(FileToEncrypt)
 			elif (self.ui.DES_Radio.isChecked()):
-				pass
-				des = DES_Encryptor(self.InputKey.text())
+				des = DES_Encryptor(keyGenerated,self.userKey)
 				des.encrypt_file(FileToEncrypt)
 			else:
 				self.logMessage('No Method For Encryption Selected.')
@@ -369,18 +376,20 @@ class MainWindow(QtWidgets.QMainWindow):
 			if(self.ui.AES_Radio.isChecked()):
 				if not self.CheckExtension(FileToDecrypt,'.aes'):
 					return
-				aes = AES_Encryptor(self.InputKey.text())
+				aes = AES_Encryptor(self.InputKey.text().encode(), self.userKey)
 				aes.decrypt_file(FileToDecrypt)
 			elif (self.ui.BLOWFISH_Radio.isChecked()):
 				if not self.CheckExtension(FileToDecrypt,'.blf'):
 					return
-				bf = Blowfish_Encryptor(self.InputKey.text())
+				bf = Blowfish_Encryptor(self.InputKey.text().encode(),self.userKey)
 				bf.decrypt_file(FileToDecrypt)
 			elif (self.ui.DES_Radio.isChecked()):
 				if not self.CheckExtension(FileToDecrypt,'.des'):
 					return
-				des = DES_Encryptor(self.InputKey.text())
+				des = DES_Encryptor(self.InputKey.text().encode(), self.userKey)
 				des.decrypt_file(FileToDecrypt)
+			else:
+				self.logMessage("No Method for Decryption Selected.")
 		else:
 			self.logMessage("No File For Decryption Selected.")
 
